@@ -5,7 +5,6 @@
     "module": "CommonJS",
     "moduleResolution": "node",
     "outDir": "./dist",
-    "rootDir": "./src",
     "lib": ["ES2020"],
     "paths": {
       "@research-hub/shared": ["../shared/src/index.ts"]
