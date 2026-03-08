@@ -160,3 +160,147 @@ create or replace trigger trg_pi_profiles_updated_at
 create or replace trigger trg_study_participant_profiles_updated_at
   before update on study_participant_profiles
   for each row execute function set_updated_at();
+
+
+-- ---------------------------------------------------------------------------
+-- Table: research_positions
+-- Job-like listings posted by PIs for student research assistants.
+-- ---------------------------------------------------------------------------
+create table if not exists research_positions (
+  id              uuid primary key default gen_random_uuid(),
+  pi_id           uuid not null references pi_profiles (id) on delete cascade,
+  title           text not null,
+  description     text not null,
+  qualifications  text,
+  compensation_type compensation_type not null,
+  time_commitment text,
+  status          position_status not null default 'open',
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
+);
+
+comment on table  research_positions                  is 'Research assistant positions posted by PIs.';
+comment on column research_positions.qualifications   is 'Free-text required/preferred qualifications.';
+comment on column research_positions.time_commitment  is 'e.g. "10 hrs/week" or "Summer 2026 full-time".';
+
+create index if not exists research_positions_pi_id_idx on research_positions (pi_id);
+create index if not exists research_positions_status_idx on research_positions (status);
+create index if not exists research_positions_title_trgm_idx
+  on research_positions using gin (title gin_trgm_ops);
+
+create or replace trigger trg_research_positions_updated_at
+  before update on research_positions
+  for each row execute function set_updated_at();
+
+
+-- ---------------------------------------------------------------------------
+-- Table: study_listings
+-- Study recruitment posts for participant users.
+-- ---------------------------------------------------------------------------
+create table if not exists study_listings (
+  id                   uuid primary key default gen_random_uuid(),
+  pi_id                uuid not null references pi_profiles (id) on delete cascade,
+  title                text not null,
+  eligibility_criteria text,
+  compensation_details text,
+  scheduling_options   jsonb not null default '{}',
+  status               study_status not null default 'recruiting',
+  created_at           timestamptz not null default now(),
+  updated_at           timestamptz not null default now()
+);
+
+comment on table  study_listings                      is 'Study participant recruitment listings posted by PIs.';
+comment on column study_listings.eligibility_criteria is 'Plain-text description of who qualifies to participate.';
+comment on column study_listings.compensation_details is 'e.g. "$20 Amazon gift card upon completion".';
+comment on column study_listings.scheduling_options   is 'JSON describing session options, e.g. {"remote": true, "sessions": [...]}.';
+
+create index if not exists study_listings_pi_id_idx  on study_listings (pi_id);
+create index if not exists study_listings_status_idx on study_listings (status);
+create index if not exists study_listings_title_trgm_idx
+  on study_listings using gin (title gin_trgm_ops);
+
+create or replace trigger trg_study_listings_updated_at
+  before update on study_listings
+  for each row execute function set_updated_at();
+
+
+-- ---------------------------------------------------------------------------
+-- Table: applications
+-- Student applications to research_positions.
+-- ---------------------------------------------------------------------------
+create table if not exists applications (
+  id                uuid primary key default gen_random_uuid(),
+  student_id        uuid not null references student_profiles (id) on delete cascade,
+  position_id       uuid not null references research_positions (id) on delete cascade,
+  personal_statement text,
+  status            application_status not null default 'pending',
+  created_at        timestamptz not null default now(),
+  updated_at        timestamptz not null default now(),
+
+  -- Prevent duplicate applications to the same position
+  unique (student_id, position_id)
+);
+
+comment on table  applications                    is 'Applications submitted by students to research positions.';
+comment on column applications.personal_statement is 'Cover letter / statement of interest.';
+
+create index if not exists applications_student_id_idx  on applications (student_id);
+create index if not exists applications_position_id_idx on applications (position_id);
+create index if not exists applications_status_idx      on applications (status);
+
+create or replace trigger trg_applications_updated_at
+  before update on applications
+  for each row execute function set_updated_at();
+
+
+-- ---------------------------------------------------------------------------
+-- Row Level Security (RLS)
+-- Enable RLS on every table. Policies delegate enforcement to the API layer
+-- using the service-role client where elevated access is required.
+-- ---------------------------------------------------------------------------
+alter table users                      enable row level security;
+alter table student_profiles           enable row level security;
+alter table pi_profiles                enable row level security;
+alter table study_participant_profiles enable row level security;
+alter table research_positions         enable row level security;
+alter table study_listings             enable row level security;
+alter table applications               enable row level security;
+
+-- Public read: anyone can browse open positions and recruiting studies
+create policy "Public read open positions"
+  on research_positions for select
+  using (status = 'open');
+
+create policy "Public read recruiting studies"
+  on study_listings for select
+  using (status = 'recruiting');
+
+-- PI read/write: a PI may only manage their own rows
+create policy "PI manages own positions"
+  on research_positions for all
+  using (pi_id in (
+    select id from pi_profiles where user_id = auth.uid()
+  ));
+
+create policy "PI manages own study listings"
+  on study_listings for all
+  using (pi_id in (
+    select id from pi_profiles where user_id = auth.uid()
+  ));
+
+-- Student read/write: a student may only see and manage their own applications
+create policy "Student manages own applications"
+  on applications for all
+  using (student_id in (
+    select id from student_profiles where user_id = auth.uid()
+  ));
+
+-- PI read: a PI may read applications for their own positions
+create policy "PI reads applications for own positions"
+  on applications for select
+  using (position_id in (
+    select id from research_positions
+    where pi_id in (
+      select id from pi_profiles where user_id = auth.uid()
+    )
+  ));
