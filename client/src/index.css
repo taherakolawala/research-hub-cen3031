@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  color: rgb(255, 165, 0);
+}
+
+@layer base {
+  html {
+    font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  }
+  body {
+    padding-bottom: 5rem;
+    background-color: #001A3E;
+    color: rgb(255, 165, 0);
+  }
+  @media (min-width: 640px) {
+    body {
+      padding-bottom: 0;
+    }
+  }
+  :root {
+    --background: 216 100% 12%;
+    --foreground: 39 100% 50%;
+    --card: 0 0% 100%;
+    --card-foreground: 39 100% 50%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 39 100% 50%;
+    --primary: 39 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 39 100% 50%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 39 100% 50%;
+    --accent: 39 100% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 39 60% 70%;
+    --input: 39 60% 70%;
+    --ring: 39 100% 50%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 0 0% 4%;
+    --foreground: 39 100% 50%;
+    --card: 0 0% 4%;
+    --card-foreground: 39 100% 50%;
+    --popover: 0 0% 4%;
+    --popover-foreground: 39 100% 50%;
+    --primary: 39 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 9%;
+    --secondary-foreground: 39 100% 50%;
+    --muted: 0 0% 9%;
+    --muted-foreground: 39 80% 60%;
+    --accent: 39 100% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 39 40% 25%;
+    --input: 39 40% 25%;
+    --ring: 39 100% 50%;
+  }
+}

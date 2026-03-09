@@ -115,7 +115,7 @@ export function ParticipantProfile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen">
         <Navbar />
         <div className="max-w-2xl mx-auto px-4 py-8">
           <div className="animate-pulse space-y-4">
@@ -129,7 +129,7 @@ export function ParticipantProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen">
       <Navbar />
       <div className="max-w-2xl mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold text-slate-900 mb-1">Participant Profile</h1>

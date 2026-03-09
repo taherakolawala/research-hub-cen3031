@@ -43,7 +43,7 @@ export function PositionDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen">
         <Navbar />
         <div className="max-w-2xl mx-auto px-4 py-8">
           <div className="animate-pulse h-8 bg-slate-200 rounded w-2/3" />
@@ -54,7 +54,7 @@ export function PositionDetail() {
 
   if (!position) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen">
         <Navbar />
         <div className="max-w-2xl mx-auto px-4 py-8">
           <p className="text-slate-600">Position not found.</p>
@@ -67,7 +67,7 @@ export function PositionDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen">
       <Navbar />
       <div className="max-w-2xl mx-auto px-4 py-8">
         <Link to="/student/positions" className="text-teal-600 hover:underline mb-4 inline-block">

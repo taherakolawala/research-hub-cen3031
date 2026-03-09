@@ -60,9 +60,9 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
     <>
       <nav
         className={`fixed top-0 left-0 right-0 z-[110] flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4 ${
-          isLanding ? 'bg-black/20 backdrop-blur-md border-b border-white/10' : ''
+          isLanding ? 'border-b border-white/10' : ''
         }`}
-        style={isLanding ? { color: 'rgb(255,165,0)' } : undefined}
+        style={isLanding ? { color: 'rgb(255,165,0)', background: '#001A3E' } : undefined}
       >
         <Link
           to="/"
@@ -98,7 +98,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
           ) : null}
         </div>
       </nav>
-      <TubelightNavBar items={items} forceBottom={isLanding} />
+      <TubelightNavBar items={items} forceBottom={false} />
     </>
   );
 }
