@@ -1,6 +1,10 @@
 export type UserRole = 'student' | 'pi';
-export type YearLevel = 'freshman' | 'sophomore' | 'junior' | 'senior' | 'grad';
-export type ApplicationStatus = 'pending' | 'reviewed' | 'accepted' | 'rejected' | 'withdrawn';
+export type AcademicLevel = 'freshman' | 'sophomore' | 'junior' | 'senior' | 'grad' | 'masters' | 'phd' | 'postdoc';
+/** @deprecated Use AcademicLevel */
+export type YearLevel = AcademicLevel;
+export type ApplicationStatus = 'pending' | 'reviewing' | 'accepted' | 'rejected' | 'withdrawn';
+export type PositionStatus = 'open' | 'closed' | 'filled';
+export type CompensationType = 'paid' | 'unpaid' | 'credit' | 'stipend';
 
 export interface User {
   id: string;
@@ -19,7 +23,9 @@ export interface StudentProfile {
   skills: string[];
   bio: string | null;
   resumeUrl: string | null;
-  yearLevel: YearLevel | null;
+  /** Maps to academic_level in DB */
+  yearLevel: AcademicLevel | null;
+  interests?: string[];
   firstName?: string;
   lastName?: string;
   email?: string;
@@ -28,10 +34,14 @@ export interface StudentProfile {
 export interface PIProfile {
   id: string;
   userId?: string;
+  name?: string | null;
   department: string | null;
   labName: string | null;
+  /** Joined string from research_areas[] for backwards compatibility */
   researchArea: string | null;
+  researchAreas?: string[];
   labWebsite: string | null;
+  staffingNeeds?: string | null;
   firstName?: string;
   lastName?: string;
   email?: string;
@@ -44,8 +54,14 @@ export interface Position {
   description: string | null;
   requiredSkills: string[];
   minGpa: number | null;
+  /** True when compensationType is 'paid' or 'stipend' */
   isFunded: boolean;
+  compensationType?: CompensationType;
+  /** True when status is 'open' */
   isOpen: boolean;
+  status?: PositionStatus;
+  timeCommitment?: string | null;
+  qualifications?: string | null;
   createdAt: string;
   deadline: string | null;
   department?: string;
@@ -73,7 +89,9 @@ export interface Application {
   positionId: string;
   studentId: string;
   status: ApplicationStatus;
+  /** Maps to personal_statement in DB */
   coverLetter: string | null;
+  personalStatement?: string | null;
   appliedAt: string;
   positionTitle?: string;
   labName?: string;

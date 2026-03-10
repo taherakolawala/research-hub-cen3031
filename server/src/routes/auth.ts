@@ -3,21 +3,22 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import pool from '../db/pool.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { config } from '../config/env.js';
+import { asyncHandler } from '../lib/asyncHandler.js';
 import type { UserRole } from '../types/index.js';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 const SALT_ROUNDS = 12;
 
 function signToken(userId: string, role: UserRole): string {
   return jwt.sign(
     { userId, role },
-    JWT_SECRET,
+    config.jwtSecret,
     { expiresIn: '7d' }
   );
 }
 
-router.post('/register', async (req: Request, res: Response) => {
+router.post('/register', asyncHandler(async (req: Request, res: Response) => {
   const { email, password, role, firstName, lastName } = req.body;
   if (!email || !password || !role || !firstName || !lastName) {
     return res.status(400).json({ error: 'Missing required fields: email, password, role, firstName, lastName' });
@@ -46,7 +47,7 @@ router.post('/register', async (req: Request, res: Response) => {
       );
     }
     const token = signToken(user.id, role);
-    res.status(201).json({
+    return res.status(201).json({
       token,
       user: {
         id: user.id,
@@ -63,9 +64,9 @@ router.post('/register', async (req: Request, res: Response) => {
     }
     throw err;
   }
-});
+}));
 
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', asyncHandler(async (req: Request, res: Response) => {
   const { email, password } = req.body;
   if (!email || !password) {
     return res.status(400).json({ error: 'Missing email or password' });
@@ -83,7 +84,7 @@ router.post('/login', async (req: Request, res: Response) => {
     return res.status(401).json({ error: 'Invalid email or password' });
   }
   const token = signToken(user.id, user.role);
-  res.json({
+  return res.json({
     token,
     user: {
       id: user.id,
@@ -93,10 +94,10 @@ router.post('/login', async (req: Request, res: Response) => {
       lastName: user.last_name,
     },
   });
-});
+}));
 
 // POST /api/auth/demo - instant demo login, upserts demo accounts
-router.post('/demo', async (req: Request, res: Response) => {
+router.post('/demo', asyncHandler(async (req: Request, res: Response) => {
   const { role } = req.body;
   if (role !== 'student' && role !== 'pi') {
     return res.status(400).json({ error: 'Role must be student or pi' });
@@ -124,13 +125,13 @@ router.post('/demo', async (req: Request, res: Response) => {
   }
 
   const token = signToken(user.id, user.role);
-  res.json({
+  return res.json({
     token,
     user: { id: user.id, email: user.email, role: user.role, firstName: user.first_name, lastName: user.last_name },
   });
-});
+}));
 
-router.get('/me', authMiddleware, async (req: Request, res: Response) => {
+router.get('/me', authMiddleware, asyncHandler(async (req: Request, res: Response) => {
   const result = await pool.query(
     'SELECT id, email, role, first_name, last_name, created_at FROM users WHERE id = $1',
     [req.userId]
@@ -139,13 +140,13 @@ router.get('/me', authMiddleware, async (req: Request, res: Response) => {
   if (!user) {
     return res.status(404).json({ error: 'User not found' });
   }
-  res.json({
+  return res.json({
     id: user.id,
     email: user.email,
     role: user.role,
     firstName: user.first_name,
     lastName: user.last_name,
   });
-});
+}));
 
 export default router;

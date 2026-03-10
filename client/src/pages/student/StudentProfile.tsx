@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Navbar } from '../../components/Navbar';
 import { api } from '../../lib/api';
-import type { YearLevel } from '../../types';
+import type { AcademicLevel } from '../../types';
 
-const YEAR_LEVELS: YearLevel[] = ['freshman', 'sophomore', 'junior', 'senior', 'grad'];
+const YEAR_LEVELS: AcademicLevel[] = ['freshman', 'sophomore', 'junior', 'senior', 'grad', 'masters', 'phd', 'postdoc'];
 
 export function StudentProfile() {
   const [loading, setLoading] = useState(true);
@@ -16,7 +16,7 @@ export function StudentProfile() {
     skills: '',
     bio: '',
     resumeUrl: '',
-    yearLevel: '' as YearLevel | '',
+    yearLevel: '' as AcademicLevel | '',
   });
 
   useEffect(() => {
@@ -118,7 +118,7 @@ export function StudentProfile() {
             <label className="block text-sm font-medium text-inherit mb-1">Year Level</label>
             <select
               value={form.yearLevel}
-              onChange={(e) => setForm((f) => ({ ...f, yearLevel: e.target.value as YearLevel }))}
+              onChange={(e) => setForm((f) => ({ ...f, yearLevel: e.target.value as AcademicLevel }))}
               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500"
             >
               <option value="">Select</option>

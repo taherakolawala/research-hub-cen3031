@@ -1,12 +1,36 @@
 import { Router, Request, Response } from 'express';
 import pool from '../db/pool.js';
 import { authMiddleware, requireRole } from '../middleware/auth.js';
+import { asyncHandler } from '../lib/asyncHandler.js';
 
 const router = Router();
 
+function rowToPosition(row: Record<string, unknown>) {
+  return {
+    id: row.id,
+    piId: row.pi_id,
+    title: row.title,
+    description: row.description,
+    requiredSkills: (row.required_skills as string[]) || [],
+    minGpa: row.min_gpa ? parseFloat(row.min_gpa as string) : null,
+    isFunded: row.compensation_type === 'paid' || row.compensation_type === 'stipend',
+    compensationType: row.compensation_type,
+    isOpen: row.status === 'open',
+    status: row.status,
+    timeCommitment: row.time_commitment,
+    qualifications: row.qualifications,
+    createdAt: row.created_at,
+    deadline: row.deadline,
+    department: row.department,
+    labName: row.lab_name,
+    researchArea: (row.research_areas as string[] | undefined)?.join(', ') || null,
+    labWebsite: row.lab_website,
+  };
+}
+
 // POST /api/positions - create (PI only)
-router.post('/', authMiddleware, requireRole('pi'), async (req: Request, res: Response) => {
-  const { title, description, requiredSkills, minGpa, isFunded, deadline } = req.body;
+router.post('/', authMiddleware, requireRole('pi'), asyncHandler(async (req: Request, res: Response) => {
+  const { title, description, requiredSkills, minGpa, isFunded, compensationType, deadline, timeCommitment, qualifications } = req.body;
   if (!title) {
     return res.status(400).json({ error: 'Title is required' });
   }
@@ -15,54 +39,55 @@ router.post('/', authMiddleware, requireRole('pi'), async (req: Request, res: Re
   if (!pi) {
     return res.status(404).json({ error: 'PI profile not found' });
   }
+  const compType = compensationType ?? (isFunded ? 'paid' : 'unpaid');
+
   const result = await pool.query(
-    `INSERT INTO positions (pi_id, title, description, required_skills, min_gpa, is_funded, deadline)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO research_positions
+       (pi_id, title, description, required_skills, min_gpa, compensation_type, deadline, time_commitment, qualifications)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING *`,
-    [pi.id, title, description ?? null, requiredSkills ?? [], minGpa ?? null, isFunded ?? false, deadline ?? null]
+    [
+      pi.id,
+      title,
+      description ?? null,
+      requiredSkills ?? [],
+      minGpa ?? null,
+      compType,
+      deadline ?? null,
+      timeCommitment ?? null,
+      qualifications ?? null,
+    ]
   );
-  const row = result.rows[0];
-  res.status(201).json({
-    id: row.id,
-    piId: row.pi_id,
-    title: row.title,
-    description: row.description,
-    requiredSkills: row.required_skills || [],
-    minGpa: row.min_gpa ? parseFloat(row.min_gpa) : null,
-    isFunded: row.is_funded,
-    isOpen: row.is_open,
-    createdAt: row.created_at,
-    deadline: row.deadline,
-  });
-});
+  return res.status(201).json(rowToPosition(result.rows[0]));
+}));
 
 // GET /api/positions - list with filters (public)
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const { search, skills, isFunded, department } = req.query;
   let query = `
-    SELECT p.*, pp.department, pp.lab_name, pp.research_area
-    FROM positions p
-    JOIN pi_profiles pp ON pp.id = p.pi_id
-    WHERE p.is_open = true
+    SELECT rp.*, pp.department, pp.lab_name, pp.research_areas, pp.lab_website
+    FROM research_positions rp
+    JOIN pi_profiles pp ON pp.id = rp.pi_id
+    WHERE rp.status = 'open'
   `;
   const params: unknown[] = [];
   let paramIndex = 1;
 
   if (search && typeof search === 'string') {
-    query += ` AND (p.title ILIKE $${paramIndex} OR p.description ILIKE $${paramIndex})`;
+    query += ` AND (rp.title ILIKE $${paramIndex} OR rp.description ILIKE $${paramIndex})`;
     params.push(`%${search}%`);
     paramIndex++;
   }
   if (skills && typeof skills === 'string') {
     const skillArr = skills.split(',').map((s) => s.trim()).filter(Boolean);
     if (skillArr.length > 0) {
-      query += ` AND p.required_skills && $${paramIndex}::text[]`;
+      query += ` AND rp.required_skills && $${paramIndex}::text[]`;
       params.push(skillArr);
       paramIndex++;
     }
   }
   if (isFunded === 'true') {
-    query += ` AND p.is_funded = true`;
+    query += ` AND rp.compensation_type IN ('paid', 'stipend')`;
   }
   if (department && typeof department === 'string') {
     query += ` AND pp.department ILIKE $${paramIndex}`;
@@ -70,134 +95,112 @@ router.get('/', async (req: Request, res: Response) => {
     paramIndex++;
   }
 
-  query += ' ORDER BY p.created_at DESC';
+  query += ' ORDER BY rp.created_at DESC';
 
   const result = await pool.query(query, params);
-  res.json(
-    result.rows.map((row) => ({
-      id: row.id,
-      piId: row.pi_id,
-      title: row.title,
-      description: row.description,
-      requiredSkills: row.required_skills || [],
-      minGpa: row.min_gpa ? parseFloat(row.min_gpa) : null,
-      isFunded: row.is_funded,
-      isOpen: row.is_open,
-      createdAt: row.created_at,
-      deadline: row.deadline,
-      department: row.department,
-      labName: row.lab_name,
-      researchArea: row.research_area,
-    }))
-  );
-});
+  return res.json(result.rows.map(rowToPosition));
+}));
 
 // GET /api/positions/mine - PI's own positions
-router.get('/mine', authMiddleware, requireRole('pi'), async (req: Request, res: Response) => {
+router.get('/mine', authMiddleware, requireRole('pi'), asyncHandler(async (req: Request, res: Response) => {
   const piResult = await pool.query('SELECT id FROM pi_profiles WHERE user_id = $1', [req.userId]);
   const pi = piResult.rows[0];
   if (!pi) {
     return res.json([]);
   }
   const result = await pool.query(
-    `SELECT p.*, 
-       (SELECT COUNT(*) FROM applications a WHERE a.position_id = p.id) as app_count
-     FROM positions p
-     WHERE p.pi_id = $1
-     ORDER BY p.created_at DESC`,
+    `SELECT rp.*,
+       (SELECT COUNT(*) FROM applications a WHERE a.position_id = rp.id) as app_count
+     FROM research_positions rp
+     WHERE rp.pi_id = $1
+     ORDER BY rp.created_at DESC`,
     [pi.id]
   );
-  res.json(
+  return res.json(
     result.rows.map((row) => ({
-      id: row.id,
-      piId: row.pi_id,
-      title: row.title,
-      description: row.description,
-      requiredSkills: row.required_skills || [],
-      minGpa: row.min_gpa ? parseFloat(row.min_gpa) : null,
-      isFunded: row.is_funded,
-      isOpen: row.is_open,
-      createdAt: row.created_at,
-      deadline: row.deadline,
-      appCount: parseInt(row.app_count, 10),
+      ...rowToPosition(row),
+      appCount: parseInt(row.app_count as string, 10),
     }))
   );
-});
+}));
 
 // GET /api/positions/:id - detail
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await pool.query(
-    `SELECT p.*, pp.department, pp.lab_name, pp.research_area, pp.lab_website
-     FROM positions p
-     JOIN pi_profiles pp ON pp.id = p.pi_id
-     WHERE p.id = $1`,
+    `SELECT rp.*, pp.department, pp.lab_name, pp.research_areas, pp.lab_website
+     FROM research_positions rp
+     JOIN pi_profiles pp ON pp.id = rp.pi_id
+     WHERE rp.id = $1`,
     [id]
   );
   const row = result.rows[0];
   if (!row) {
     return res.status(404).json({ error: 'Position not found' });
   }
-  res.json({
-    id: row.id,
-    piId: row.pi_id,
-    title: row.title,
-    description: row.description,
-    requiredSkills: row.required_skills || [],
-    minGpa: row.min_gpa ? parseFloat(row.min_gpa) : null,
-    isFunded: row.is_funded,
-    isOpen: row.is_open,
-    createdAt: row.created_at,
-    deadline: row.deadline,
-    department: row.department,
-    labName: row.lab_name,
-    researchArea: row.research_area,
-    labWebsite: row.lab_website,
-  });
-});
+  return res.json(rowToPosition(row));
+}));
 
 // PUT /api/positions/:id - update (owner only)
-router.put('/:id', authMiddleware, requireRole('pi'), async (req: Request, res: Response) => {
+router.put('/:id', authMiddleware, requireRole('pi'), asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { title, description, requiredSkills, minGpa, isFunded, isOpen, deadline } = req.body;
+  const { title, description, requiredSkills, minGpa, isFunded, compensationType, isOpen, status, deadline, timeCommitment, qualifications } = req.body;
   const piResult = await pool.query('SELECT id FROM pi_profiles WHERE user_id = $1', [req.userId]);
   const pi = piResult.rows[0];
   if (!pi) {
     return res.status(404).json({ error: 'PI profile not found' });
   }
+
+  let resolvedStatus: string | null = null;
+  if (status !== undefined) {
+    resolvedStatus = status;
+  } else if (isOpen !== undefined) {
+    resolvedStatus = isOpen ? 'open' : 'closed';
+  }
+
+  let resolvedCompType: string | null = null;
+  if (compensationType !== undefined) {
+    resolvedCompType = compensationType;
+  } else if (isFunded !== undefined) {
+    resolvedCompType = isFunded ? 'paid' : 'unpaid';
+  }
+
   const result = await pool.query(
-    `UPDATE positions SET
-       title = COALESCE($1, title),
-       description = COALESCE($2, description),
-       required_skills = COALESCE($3, required_skills),
-       min_gpa = COALESCE($4, min_gpa),
-       is_funded = COALESCE($5, is_funded),
-       is_open = COALESCE($6, is_open),
-       deadline = COALESCE($7, deadline)
-     WHERE id = $8 AND pi_id = $9
+    `UPDATE research_positions SET
+       title             = COALESCE($1, title),
+       description       = COALESCE($2, description),
+       required_skills   = COALESCE($3, required_skills),
+       min_gpa           = COALESCE($4, min_gpa),
+       compensation_type = COALESCE($5::compensation_type, compensation_type),
+       status            = COALESCE($6::position_status, status),
+       deadline          = COALESCE($7, deadline),
+       time_commitment   = COALESCE($8, time_commitment),
+       qualifications    = COALESCE($9, qualifications)
+     WHERE id = $10 AND pi_id = $11
      RETURNING *`,
-    [title ?? null, description ?? null, requiredSkills ?? null, minGpa ?? null, isFunded ?? null, isOpen ?? null, deadline ?? null, id, pi.id]
+    [
+      title ?? null,
+      description ?? null,
+      requiredSkills ?? null,
+      minGpa ?? null,
+      resolvedCompType,
+      resolvedStatus,
+      deadline ?? null,
+      timeCommitment ?? null,
+      qualifications ?? null,
+      id,
+      pi.id,
+    ]
   );
   const row = result.rows[0];
   if (!row) {
     return res.status(404).json({ error: 'Position not found or access denied' });
   }
-  res.json({
-    id: row.id,
-    piId: row.pi_id,
-    title: row.title,
-    description: row.description,
-    requiredSkills: row.required_skills || [],
-    minGpa: row.min_gpa ? parseFloat(row.min_gpa) : null,
-    isFunded: row.is_funded,
-    isOpen: row.is_open,
-    createdAt: row.created_at,
-    deadline: row.deadline,
-  });
-});
+  return res.json(rowToPosition(row));
+}));
 
-// DELETE /api/positions/:id - close (owner only), marks pending/reviewed applications as withdrawn
-router.delete('/:id', authMiddleware, requireRole('pi'), async (req: Request, res: Response) => {
+// DELETE /api/positions/:id - close (owner only)
+router.delete('/:id', authMiddleware, requireRole('pi'), asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const piResult = await pool.query('SELECT id FROM pi_profiles WHERE user_id = $1', [req.userId]);
   const pi = piResult.rows[0];
@@ -208,7 +211,7 @@ router.delete('/:id', authMiddleware, requireRole('pi'), async (req: Request, re
   try {
     await client.query('BEGIN');
     const result = await client.query(
-      `UPDATE positions SET is_open = false WHERE id = $1 AND pi_id = $2 RETURNING id`,
+      `UPDATE research_positions SET status = 'closed' WHERE id = $1 AND pi_id = $2 RETURNING id`,
       [id, pi.id]
     );
     if (result.rows.length === 0) {
@@ -217,7 +220,7 @@ router.delete('/:id', authMiddleware, requireRole('pi'), async (req: Request, re
     }
     await client.query(
       `UPDATE applications SET status = 'withdrawn'
-       WHERE position_id = $1 AND status IN ('pending', 'reviewed')`,
+       WHERE position_id = $1 AND status IN ('pending', 'reviewing')`,
       [id]
     );
     await client.query('COMMIT');
@@ -227,7 +230,7 @@ router.delete('/:id', authMiddleware, requireRole('pi'), async (req: Request, re
   } finally {
     client.release();
   }
-  res.status(204).send();
-});
+  return res.status(204).send();
+}));
 
 export default router;

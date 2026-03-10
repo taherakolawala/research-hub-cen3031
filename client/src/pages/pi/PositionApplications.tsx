@@ -96,7 +96,7 @@ export function PositionApplications() {
                   )}
                 </div>
                 <div className="flex items-center gap-3">
-                  <StatusBadge status={app.status as 'pending' | 'reviewed' | 'accepted' | 'rejected'} />
+                  <StatusBadge status={app.status as 'pending' | 'reviewing' | 'accepted' | 'rejected'} />
                   <select
                     value={app.status}
                     onChange={(e) => updateStatus(app.id, e.target.value)}
@@ -104,7 +104,7 @@ export function PositionApplications() {
                     className="text-sm border border-slate-300 rounded px-2 py-1"
                   >
                     <option value="pending">Pending</option>
-                    <option value="reviewed">Reviewed</option>
+                    <option value="reviewing">Reviewing</option>
                     <option value="accepted">Accepted</option>
                     <option value="rejected">Rejected</option>
                   </select>

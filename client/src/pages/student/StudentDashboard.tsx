@@ -80,7 +80,7 @@ export function StudentDashboard() {
                     {app.labName && <p className="text-sm text-inherit">{app.labName}</p>}
                   </div>
                   <div className="flex items-center gap-3">
-                    <StatusBadge status={app.status as 'pending' | 'reviewed' | 'accepted' | 'rejected'} />
+                    <StatusBadge status={app.status as 'pending' | 'reviewing' | 'accepted' | 'rejected'} />
                     <Link to="/student/applications" className="text-sm text-teal-600 hover:underline">
                       View all →
                     </Link>

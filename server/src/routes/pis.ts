@@ -1,11 +1,12 @@
 import { Router, Request, Response } from 'express';
 import pool from '../db/pool.js';
 import { authMiddleware, requireRole } from '../middleware/auth.js';
+import { asyncHandler } from '../lib/asyncHandler.js';
 
 const router = Router();
 
 // GET /api/pis/profile - own profile
-router.get('/profile', authMiddleware, requireRole('pi'), async (req: Request, res: Response) => {
+router.get('/profile', authMiddleware, requireRole('pi'), asyncHandler(async (req: Request, res: Response) => {
   const result = await pool.query(
     `SELECT pp.*, u.first_name, u.last_name, u.email
      FROM pi_profiles pp
@@ -17,45 +18,72 @@ router.get('/profile', authMiddleware, requireRole('pi'), async (req: Request, r
   if (!row) {
     return res.status(404).json({ error: 'Profile not found' });
   }
-  res.json({
+  return res.json({
     id: row.id,
     userId: row.user_id,
+    name: row.name,
     department: row.department,
     labName: row.lab_name,
-    researchArea: row.research_area,
+    researchArea: (row.research_areas || []).join(', ') || null,
+    researchAreas: row.research_areas || [],
     labWebsite: row.lab_website,
+    staffingNeeds: row.staffing_needs,
     firstName: row.first_name,
     lastName: row.last_name,
     email: row.email,
   });
-});
+}));
 
 // PUT /api/pis/profile - update own profile
-router.put('/profile', authMiddleware, requireRole('pi'), async (req: Request, res: Response) => {
-  const { department, labName, researchArea, labWebsite } = req.body;
+router.put('/profile', authMiddleware, requireRole('pi'), asyncHandler(async (req: Request, res: Response) => {
+  const { name, department, labName, researchArea, researchAreas, labWebsite, staffingNeeds } = req.body;
+
+  // Accept either researchAreas (array) or researchArea (string)
+  let areas: string[] | null = null;
+  if (researchAreas !== undefined) {
+    areas = Array.isArray(researchAreas) ? researchAreas : [researchAreas];
+  } else if (researchArea !== undefined) {
+    areas = researchArea
+      ? researchArea.split(',').map((s: string) => s.trim()).filter(Boolean)
+      : [];
+  }
+
   const result = await pool.query(
     `UPDATE pi_profiles SET
-       department = COALESCE($1, department),
-       lab_name = COALESCE($2, lab_name),
-       research_area = COALESCE($3, research_area),
-       lab_website = COALESCE($4, lab_website),
-       updated_at = NOW()
-     WHERE user_id = $5
+       name            = COALESCE($1, name),
+       department      = COALESCE($2, department),
+       lab_name        = COALESCE($3, lab_name),
+       research_areas  = COALESCE($4, research_areas),
+       lab_website     = COALESCE($5, lab_website),
+       staffing_needs  = COALESCE($6, staffing_needs),
+       updated_at      = NOW()
+     WHERE user_id = $7
      RETURNING *`,
-    [department ?? null, labName ?? null, researchArea ?? null, labWebsite ?? null, req.userId]
+    [
+      name ?? null,
+      department ?? null,
+      labName ?? null,
+      areas,
+      labWebsite ?? null,
+      staffingNeeds ?? null,
+      req.userId,
+    ]
   );
   const row = result.rows[0];
   if (!row) {
     return res.status(404).json({ error: 'Profile not found' });
   }
-  res.json({
+  return res.json({
     id: row.id,
     userId: row.user_id,
+    name: row.name,
     department: row.department,
     labName: row.lab_name,
-    researchArea: row.research_area,
+    researchArea: (row.research_areas || []).join(', ') || null,
+    researchAreas: row.research_areas || [],
     labWebsite: row.lab_website,
+    staffingNeeds: row.staffing_needs,
   });
-});
+}));
 
 export default router;

@@ -70,7 +70,7 @@ export function StudentApplications() {
                     </td>
                     <td className="px-4 py-3 text-inherit">{app.labName || '—'}</td>
                     <td className="px-4 py-3">
-                      <StatusBadge status={app.status as 'pending' | 'reviewed' | 'accepted' | 'rejected' | 'withdrawn'} />
+                      <StatusBadge status={app.status as 'pending' | 'reviewing' | 'accepted' | 'rejected' | 'withdrawn'} />
                     </td>
                     <td className="px-4 py-3 text-inherit text-sm">
                       {new Date(app.appliedAt).toLocaleDateString()}

@@ -1,11 +1,12 @@
 import { Router, Request, Response } from 'express';
 import pool from '../db/pool.js';
 import { authMiddleware, requireRole } from '../middleware/auth.js';
+import { asyncHandler } from '../lib/asyncHandler.js';
 
 const router = Router();
 
 // GET /api/students/profile - own profile (student only)
-router.get('/profile', authMiddleware, requireRole('student'), async (req: Request, res: Response) => {
+router.get('/profile', authMiddleware, requireRole('student'), asyncHandler(async (req: Request, res: Response) => {
   const result = await pool.query(
     `SELECT sp.*, u.first_name, u.last_name, u.email
      FROM student_profiles sp
@@ -17,7 +18,7 @@ router.get('/profile', authMiddleware, requireRole('student'), async (req: Reque
   if (!row) {
     return res.status(404).json({ error: 'Profile not found' });
   }
-  res.json({
+  return res.json({
     id: row.id,
     userId: row.user_id,
     major: row.major,
@@ -26,35 +27,47 @@ router.get('/profile', authMiddleware, requireRole('student'), async (req: Reque
     skills: row.skills || [],
     bio: row.bio,
     resumeUrl: row.resume_url,
-    yearLevel: row.year_level,
+    yearLevel: row.academic_level,
+    interests: row.interests || [],
     firstName: row.first_name,
     lastName: row.last_name,
     email: row.email,
   });
-});
+}));
 
 // PUT /api/students/profile - update own profile
-router.put('/profile', authMiddleware, requireRole('student'), async (req: Request, res: Response) => {
-  const { major, gpa, graduationYear, skills, bio, resumeUrl, yearLevel } = req.body;
+router.put('/profile', authMiddleware, requireRole('student'), asyncHandler(async (req: Request, res: Response) => {
+  const { major, gpa, graduationYear, skills, bio, resumeUrl, yearLevel, interests } = req.body;
   const result = await pool.query(
     `UPDATE student_profiles SET
-       major = COALESCE($1, major),
-       gpa = COALESCE($2, gpa),
+       major           = COALESCE($1, major),
+       gpa             = COALESCE($2, gpa),
        graduation_year = COALESCE($3, graduation_year),
-       skills = COALESCE($4, skills),
-       bio = COALESCE($5, bio),
-       resume_url = COALESCE($6, resume_url),
-       year_level = COALESCE($7, year_level),
-       updated_at = NOW()
-     WHERE user_id = $8
+       skills          = COALESCE($4, skills),
+       bio             = COALESCE($5, bio),
+       resume_url      = COALESCE($6, resume_url),
+       academic_level  = COALESCE($7, academic_level),
+       interests       = COALESCE($8, interests),
+       updated_at      = NOW()
+     WHERE user_id = $9
      RETURNING *`,
-    [major ?? null, gpa ?? null, graduationYear ?? null, skills ?? [], bio ?? null, resumeUrl ?? null, yearLevel ?? null, req.userId]
+    [
+      major ?? null,
+      gpa ?? null,
+      graduationYear ?? null,
+      skills ?? null,
+      bio ?? null,
+      resumeUrl ?? null,
+      yearLevel ?? null,
+      interests ?? null,
+      req.userId,
+    ]
   );
   const row = result.rows[0];
   if (!row) {
     return res.status(404).json({ error: 'Profile not found' });
   }
-  res.json({
+  return res.json({
     id: row.id,
     userId: row.user_id,
     major: row.major,
@@ -63,12 +76,13 @@ router.put('/profile', authMiddleware, requireRole('student'), async (req: Reque
     skills: row.skills || [],
     bio: row.bio,
     resumeUrl: row.resume_url,
-    yearLevel: row.year_level,
+    yearLevel: row.academic_level,
+    interests: row.interests || [],
   });
-});
+}));
 
 // GET /api/students - list with filters (PI only)
-router.get('/', authMiddleware, requireRole('pi'), async (req: Request, res: Response) => {
+router.get('/', authMiddleware, requireRole('pi'), asyncHandler(async (req: Request, res: Response) => {
   const { major, minGpa, skills, yearLevel } = req.query;
   let query = `
     SELECT sp.*, u.first_name, u.last_name, u.email
@@ -98,7 +112,7 @@ router.get('/', authMiddleware, requireRole('pi'), async (req: Request, res: Res
     }
   }
   if (yearLevel && typeof yearLevel === 'string') {
-    query += ` AND sp.year_level = $${paramIndex}`;
+    query += ` AND sp.academic_level = $${paramIndex}`;
     params.push(yearLevel);
     paramIndex++;
   }
@@ -106,7 +120,7 @@ router.get('/', authMiddleware, requireRole('pi'), async (req: Request, res: Res
   query += ' ORDER BY sp.updated_at DESC';
 
   const result = await pool.query(query, params);
-  res.json(
+  return res.json(
     result.rows.map((row) => ({
       id: row.id,
       userId: row.user_id,
@@ -116,16 +130,17 @@ router.get('/', authMiddleware, requireRole('pi'), async (req: Request, res: Res
       skills: row.skills || [],
       bio: row.bio,
       resumeUrl: row.resume_url,
-      yearLevel: row.year_level,
+      yearLevel: row.academic_level,
+      interests: row.interests || [],
       firstName: row.first_name,
       lastName: row.last_name,
       email: row.email,
     }))
   );
-});
+}));
 
 // GET /api/students/:id - single student (PI only)
-router.get('/:id', authMiddleware, requireRole('pi'), async (req: Request, res: Response) => {
+router.get('/:id', authMiddleware, requireRole('pi'), asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await pool.query(
     `SELECT sp.*, u.first_name, u.last_name, u.email
@@ -138,7 +153,7 @@ router.get('/:id', authMiddleware, requireRole('pi'), async (req: Request, res: 
   if (!row) {
     return res.status(404).json({ error: 'Student not found' });
   }
-  res.json({
+  return res.json({
     id: row.id,
     userId: row.user_id,
     major: row.major,
@@ -147,11 +162,12 @@ router.get('/:id', authMiddleware, requireRole('pi'), async (req: Request, res: 
     skills: row.skills || [],
     bio: row.bio,
     resumeUrl: row.resume_url,
-    yearLevel: row.year_level,
+    yearLevel: row.academic_level,
+    interests: row.interests || [],
     firstName: row.first_name,
     lastName: row.last_name,
     email: row.email,
   });
-});
+}));
 
 export default router;

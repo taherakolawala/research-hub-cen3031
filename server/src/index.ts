@@ -1,5 +1,5 @@
-import 'dotenv/config';
-import express from 'express';
+import { config } from './config/env.js';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import authRoutes from './routes/auth.js';
 import studentRoutes from './routes/students.js';
@@ -9,9 +9,8 @@ import applicationRoutes from './routes/applications.js';
 import participantRoutes from './routes/participants.js';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+app.use(cors({ origin: config.clientUrl, credentials: true }));
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
@@ -22,9 +21,17 @@ app.use('/api/applications', applicationRoutes);
 app.use('/api/participants', participantRoutes);
 
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true });
+  res.json({ ok: true, timestamp: new Date().toISOString() });
 });
 
-app.listen(PORT, () => {
-  console.log(`ResearchHub server running on http://localhost:${PORT}`);
+// Global error handler — catches unhandled errors from async route handlers
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error('[Error]', err.message);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+app.listen(config.port, () => {
+  console.log(`ResearchHub server running on http://localhost:${config.port}`);
+  console.log(`Environment: ${config.nodeEnv}`);
 });
