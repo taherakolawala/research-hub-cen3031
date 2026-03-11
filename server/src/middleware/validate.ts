@@ -4,7 +4,9 @@ import { ApiResponse } from '@research-hub/shared';
 type Rule = {
   field: string;
   required?: boolean;
-  type?: 'string' | 'array' | 'uuid';
+  type?: 'string' | 'array' | 'uuid' | 'object' | 'enum';
+  /** Allowed values when type is 'enum' */
+  values?: string[];
   minLength?: number;
   label?: string;
 };
@@ -31,6 +33,16 @@ function validateField(value: unknown, rule: Rule): string | null {
   if (rule.type === 'array' && Array.isArray(value)) {
     const hasNonString = value.some((v) => typeof v !== 'string');
     if (hasNonString) return `${label} must be an array of strings`;
+  }
+  if (rule.type === 'object') {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+      return `${label} must be a plain object`;
+    }
+  }
+  if (rule.type === 'enum') {
+    if (!rule.values?.includes(value as string)) {
+      return `${label} must be one of: ${rule.values?.join(', ')}`;
+    }
   }
   if (rule.minLength && typeof value === 'string' && value.trim().length < rule.minLength) {
     return `${label} must be at least ${rule.minLength} character(s)`;
