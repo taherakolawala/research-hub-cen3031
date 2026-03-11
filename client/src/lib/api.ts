@@ -78,6 +78,7 @@ export const api = {
       request<Position>(`/positions/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
     close: (id: string) => request<void>(`/positions/${id}`, { method: 'DELETE' }),
     mine: () => request<(Position & { appCount?: number })[]>('/positions/mine'),
+    recommended: () => request<Position[]>('/positions/recommended'),
   },
   participants: {
     getProfile: () => request<ParticipantProfile | null>('/participants/profile'),
