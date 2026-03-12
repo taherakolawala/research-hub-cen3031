@@ -11,6 +11,158 @@ import {
 } from '../types/studyListing';
 
 // ---------------------------------------------------------------------------
+// PUT /api/studies/:id
+// ---------------------------------------------------------------------------
+
+export async function updateStudy(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { id } = req.params;
+
+    // Confirm study exists before attempting update
+    const { data: existing, error: fetchError } = await supabaseAdmin
+      .from('study_listings')
+      .select('id, status')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (fetchError) {
+      const err: AppError = new Error(fetchError.message);
+      err.statusCode = 500;
+      return next(err);
+    }
+
+    if (!existing) {
+      const response: ApiResponse<never> = {
+        success: false,
+        error: 'Study listing not found',
+      };
+      res.status(404).json(response);
+      return;
+    }
+
+    // Build patch from allowed fields only
+    const patch: Partial<UpdateStudyBody> = {};
+    for (const field of UPDATE_ALLOWED_FIELDS) {
+      if (req.body[field] !== undefined) {
+        const val = req.body[field];
+        patch[field] = typeof val === 'string' ? val.trim() : val;
+      }
+    }
+
+    if (Object.keys(patch).length === 0) {
+      const response: ApiResponse<never> = {
+        success: false,
+        error: 'Request body must include at least one field to update',
+      };
+      res.status(400).json(response);
+      return;
+    }
+
+    // Reject re-opening a closed/completed study via PUT
+    if (
+      (existing as { status: StudyStatus }).status !== 'recruiting' &&
+      patch.status === 'recruiting'
+    ) {
+      const response: ApiResponse<never> = {
+        success: false,
+        error: 'A closed or completed study cannot be re-opened',
+      };
+      res.status(409).json(response);
+      return;
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('study_listings')
+      .update(patch)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      const err: AppError = new Error(error.message);
+      err.statusCode = 500;
+      return next(err);
+    }
+
+    const response: ApiResponse<StudyListing> = { success: true, data };
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// DELETE /api/studies/:id
+// ---------------------------------------------------------------------------
+
+export async function closeStudy(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { id } = req.params;
+
+    // Confirm study exists
+    const { data: existing, error: fetchError } = await supabaseAdmin
+      .from('study_listings')
+      .select('id, status')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (fetchError) {
+      const err: AppError = new Error(fetchError.message);
+      err.statusCode = 500;
+      return next(err);
+    }
+
+    if (!existing) {
+      const response: ApiResponse<never> = {
+        success: false,
+        error: 'Study listing not found',
+      };
+      res.status(404).json(response);
+      return;
+    }
+
+    if ((existing as { status: StudyStatus }).status === 'closed') {
+      const response: ApiResponse<never> = {
+        success: false,
+        error: 'Study listing is already closed',
+      };
+      res.status(409).json(response);
+      return;
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('study_listings')
+      .update({ status: 'closed' })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      const err: AppError = new Error(error.message);
+      err.statusCode = 500;
+      return next(err);
+    }
+
+    const response: ApiResponse<StudyListing> = {
+      success: true,
+      data,
+      message: 'Study listing closed successfully',
+    };
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // GET /api/studies
 // ---------------------------------------------------------------------------
 
