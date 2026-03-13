@@ -9,6 +9,78 @@ import {
 } from '../types/application';
 
 // ---------------------------------------------------------------------------
+// GET /api/applications/mine
+// ---------------------------------------------------------------------------
+
+export async function getMyApplications(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { student_id } = req.query;
+
+    if (!student_id || typeof student_id !== 'string') {
+      const response: ApiResponse<never> = {
+        success: false,
+        error: 'student_id query parameter is required',
+      };
+      res.status(400).json(response);
+      return;
+    }
+
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!UUID_RE.test(student_id)) {
+      const response: ApiResponse<never> = {
+        success: false,
+        error: 'student_id must be a valid UUID',
+      };
+      res.status(400).json(response);
+      return;
+    }
+
+    // Join research_positions to surface title and department alongside each application
+    const { data, error } = await supabaseAdmin
+      .from('applications')
+      .select(`
+        *,
+        research_positions!position_id (
+          title,
+          department
+        )
+      `)
+      .eq('student_id', student_id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      const err: AppError = new Error(error.message);
+      err.statusCode = 500;
+      return next(err);
+    }
+
+    // Flatten nested research_positions into top-level fields
+    const enriched: ApplicationWithPosition[] = (data ?? []).map((row) => {
+      const { research_positions: pos, ...rest } = row as Application & {
+        research_positions: { title: string; department: string } | null;
+      };
+      return {
+        ...rest,
+        position_title: pos?.title ?? '',
+        position_department: pos?.department ?? '',
+      };
+    });
+
+    const response: ApiResponse<ApplicationWithPosition[]> = {
+      success: true,
+      data: enriched,
+    };
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // POST /api/applications
 // ---------------------------------------------------------------------------
 
