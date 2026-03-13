@@ -81,6 +81,46 @@ export async function getMyApplications(
 }
 
 // ---------------------------------------------------------------------------
+// GET /api/applications/:id
+// ---------------------------------------------------------------------------
+
+export async function getApplicationById(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { id } = req.params;
+
+    const { data, error } = await supabaseAdmin
+      .from('applications')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) {
+      const err: AppError = new Error(error.message);
+      err.statusCode = 500;
+      return next(err);
+    }
+
+    if (!data) {
+      const response: ApiResponse<never> = {
+        success: false,
+        error: 'Application not found',
+      };
+      res.status(404).json(response);
+      return;
+    }
+
+    const response: ApiResponse<Application> = { success: true, data };
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // POST /api/applications
 // ---------------------------------------------------------------------------
 
