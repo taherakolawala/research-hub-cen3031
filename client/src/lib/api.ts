@@ -1,28 +1,98 @@
-import type { ApiResponse } from '@research-hub/shared';
+import type { User, StudentProfile, PIProfile, Position, Application, ParticipantProfile } from '../types';
 
-const BASE_URL = '/api';
+const API_BASE = '/api';
+
+let token: string | null = null;
+
+export function setAuthToken(t: string | null) {
+  token = t;
+}
+
+export function getAuthToken(): string | null {
+  return token;
+}
 
 async function request<T>(
   path: string,
-  options?: RequestInit
-): Promise<ApiResponse<T>> {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-    ...options,
-  });
+  options: RequestInit = {}
+): Promise<T> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string>),
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new ApiError(res.status, data.error || res.statusText);
+  }
+  return data as T;
+}
 
-  const data: ApiResponse<T> = await res.json();
-  return data;
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    message: string
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
 }
 
 export const api = {
-  get: <T>(path: string) => request<T>(path),
-  post: <T>(path: string, body: unknown) =>
-    request<T>(path, { method: 'POST', body: JSON.stringify(body) }),
-  put: <T>(path: string, body: unknown) =>
-    request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
-  delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+  auth: {
+    register: (body: { email: string; password: string; role: string; firstName: string; lastName: string }) =>
+      request<{ token: string; user: User }>('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
+    login: (body: { email: string; password: string }) =>
+      request<{ token: string; user: User }>('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
+    me: () => request<User>('/auth/me'),
+    demo: (role: 'student' | 'pi') =>
+      request<{ token: string; user: User }>('/auth/demo', { method: 'POST', body: JSON.stringify({ role }) }),
+  },
+  students: {
+    getProfile: () => request<StudentProfile>('/students/profile'),
+    updateProfile: (body: Partial<StudentProfile>) =>
+      request<StudentProfile>('/students/profile', { method: 'PUT', body: JSON.stringify(body) }),
+    list: (params?: { major?: string; minGpa?: number; skills?: string; yearLevel?: string }) => {
+      const q = new URLSearchParams(params as Record<string, string>).toString();
+      return request<StudentProfile[]>(`/students${q ? `?${q}` : ''}`);
+    },
+    getById: (id: string) => request<StudentProfile>(`/students/${id}`),
+  },
+  pis: {
+    getProfile: () => request<PIProfile>('/pis/profile'),
+    updateProfile: (body: Partial<PIProfile>) =>
+      request<PIProfile>('/pis/profile', { method: 'PUT', body: JSON.stringify(body) }),
+  },
+  positions: {
+    list: (params?: { search?: string; skills?: string; isFunded?: string; department?: string }) => {
+      const q = new URLSearchParams(params as Record<string, string>).toString();
+      return request<Position[]>(`/positions${q ? `?${q}` : ''}`);
+    },
+    getById: (id: string) => request<Position>(`/positions/${id}`),
+    create: (body: Partial<Position> & { title: string }) =>
+      request<Position>('/positions', { method: 'POST', body: JSON.stringify(body) }),
+    update: (id: string, body: Partial<Position>) =>
+      request<Position>(`/positions/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+    close: (id: string) => request<void>(`/positions/${id}`, { method: 'DELETE' }),
+    mine: () => request<(Position & { appCount?: number })[]>('/positions/mine'),
+  },
+  participants: {
+    getProfile: () => request<ParticipantProfile | null>('/participants/profile'),
+    updateProfile: (body: Partial<ParticipantProfile>) =>
+      request<ParticipantProfile>('/participants/profile', { method: 'PUT', body: JSON.stringify(body) }),
+  },
+  applications: {
+    create: (body: { positionId: string; coverLetter?: string }) =>
+      request<Application>('/applications', { method: 'POST', body: JSON.stringify(body) }),
+    mine: () => request<(Application & { positionTitle?: string; labName?: string })[]>('/applications/mine'),
+    byPosition: (positionId: string) =>
+      request<(Application & { firstName?: string; lastName?: string; email?: string; major?: string; gpa?: number; skills?: string[]; bio?: string; resumeUrl?: string; yearLevel?: string })[]>(
+        `/applications/position/${positionId}`
+      ),
+    updateStatus: (id: string, status: string) =>
+      request<Application>(`/applications/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  },
 };
