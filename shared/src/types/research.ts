@@ -13,6 +13,8 @@ export interface ResearchPosition {
   preferredSkills: string[];
   compensationType: CompensationType;
   compensationDetails?: string;
+  minGpa?: number;
+  academicLevel?: ('Undergraduate' | 'Graduate' | 'PhD')[];
   hoursPerWeek: number;
   startDate?: string;
   endDate?: string;
