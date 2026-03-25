@@ -1,0 +1,241 @@
+/* Student — My Applications */
+.sma-page {
+  min-height: 100vh;
+  background: #f6f7fb;
+  font-family: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  color: #1a1d2e;
+}
+
+.sma-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 32px 24px 48px;
+}
+
+.sma-title {
+  margin: 0 0 6px;
+  font-size: 28px;
+  font-weight: 700;
+  color: #3b5bdb;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.sma-subtitle {
+  margin: 0 0 24px;
+  font-size: 14px;
+  color: #6b7194;
+}
+
+.sma-card {
+  background: #fff;
+  border: 1px solid #d5d8e8;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.sma-list-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 24px;
+  border-bottom: 1px solid #eceef5;
+  background: #f6f7fb;
+}
+
+.sma-dot-spacer {
+  width: 8px;
+  flex-shrink: 0;
+}
+
+.sma-h-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8b90ad;
+}
+
+.sma-h-position {
+  flex: 1;
+  min-width: 0;
+}
+
+.sma-h-status {
+  flex-shrink: 0;
+  width: 100px;
+  text-align: center;
+}
+
+.sma-h-applied {
+  flex-shrink: 0;
+  width: 120px;
+  text-align: right;
+}
+
+.sma-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  text-decoration: none;
+  color: inherit;
+  border-bottom: 1px solid #eceef5;
+  transition: background-color 0.12s ease;
+  cursor: pointer;
+}
+
+.sma-row:last-child {
+  border-bottom: none;
+}
+
+.sma-row:hover {
+  background: #edf2ff;
+}
+
+.sma-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.sma-dot-pending {
+  background: #b35c00;
+}
+
+.sma-dot-reviewing {
+  background: #3451b2;
+}
+
+.sma-dot-accepted {
+  background: #2b8a3e;
+}
+
+.sma-dot-rejected {
+  background: #c62828;
+}
+
+.sma-dot-withdrawn {
+  background: #6b7194;
+}
+
+.sma-position-block {
+  flex: 1;
+  min-width: 0;
+}
+
+.sma-position-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1d2e;
+  line-height: 1.35;
+}
+
+.sma-position-meta {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #8b90ad;
+  line-height: 1.35;
+}
+
+.sma-badge {
+  flex-shrink: 0;
+  width: 100px;
+  display: flex;
+  justify-content: center;
+}
+
+.sma-badge-inner {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.sma-badge-pending {
+  background: #fff8e1;
+  color: #b35c00;
+}
+
+.sma-badge-reviewing {
+  background: #dbe4ff;
+  color: #3451b2;
+}
+
+.sma-badge-accepted {
+  background: #d3f9d8;
+  color: #2b8a3e;
+}
+
+.sma-badge-rejected {
+  background: #ffe0e0;
+  color: #c62828;
+}
+
+.sma-badge-withdrawn {
+  background: #eceef5;
+  color: #6b7194;
+}
+
+.sma-applied {
+  flex-shrink: 0;
+  width: 120px;
+  text-align: right;
+}
+
+.sma-applied-date {
+  margin: 0;
+  font-size: 12px;
+  color: #b0b4cc;
+  line-height: 1.3;
+}
+
+.sma-applied-rel {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: #d5d8e8;
+  line-height: 1.2;
+}
+
+.sma-empty {
+  padding: 60px 24px;
+  text-align: center;
+}
+
+.sma-empty-icon {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 16px;
+  color: #b0b4cc;
+}
+
+.sma-empty-title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #3d4260;
+}
+
+.sma-empty-sub {
+  margin: 0 0 20px;
+  font-size: 14px;
+  color: #8b90ad;
+}
+
+.sma-empty-link {
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #3b5bdb;
+  text-decoration: none;
+}
+
+.sma-empty-link:hover {
+  text-decoration: underline;
+}

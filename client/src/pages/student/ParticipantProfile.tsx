@@ -35,7 +35,7 @@ function CheckGroup({
             className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
               selected.includes(opt)
                 ? 'bg-teal-600 text-white border-teal-600'
-                : 'bg-white text-inherit border-slate-300 hover:border-teal-400'
+                : 'bg-black text-inherit border-white/20 hover:border-teal-400'
             }`}
           >
             {opt}
@@ -194,7 +194,7 @@ export function ParticipantProfile() {
                       className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
                         form.ageRange === r
                           ? 'bg-teal-600 text-white border-teal-600'
-                          : 'bg-white text-inherit border-slate-300 hover:border-teal-400'
+                          : 'bg-black text-inherit border-white/20 hover:border-teal-400'
                       }`}
                     >
                       {r}
@@ -256,7 +256,7 @@ export function ParticipantProfile() {
                       className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
                         form.locationPref === l
                           ? 'bg-teal-600 text-white border-teal-600'
-                          : 'bg-white text-inherit border-slate-300 hover:border-teal-400'
+                          : 'bg-black text-inherit border-white/20 hover:border-teal-400'
                       }`}
                     >
                       {l}

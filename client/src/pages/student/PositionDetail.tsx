@@ -1,8 +1,30 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { FlaskConical } from 'lucide-react';
 import { Navbar } from '../../components/Navbar';
 import { api, ApiError } from '../../lib/api';
 import type { Position } from '../../types';
+import './position-detail.css';
+
+function formatDeadlineLong(iso: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+function deadlineCountdown(iso: string | null): { kind: 'ok' | 'closed' | 'none'; daysText: string } {
+  if (!iso) return { kind: 'none', daysText: '' };
+  const end = new Date(iso);
+  if (Number.isNaN(end.getTime())) return { kind: 'none', daysText: '' };
+  const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+  const now = new Date();
+  const startDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diffDays = Math.round((endDay.getTime() - startDay.getTime()) / 86_400_000);
+  if (diffDays < 0) return { kind: 'closed', daysText: 'Closed' };
+  if (diffDays === 0) return { kind: 'ok', daysText: '(Today)' };
+  return { kind: 'ok', daysText: `(${diffDays} days left)` };
+}
 
 export function PositionDetail() {
   const { id } = useParams<{ id: string }>();
@@ -41,12 +63,20 @@ export function PositionDetail() {
     }
   };
 
+  const piDisplay =
+    position?.piFirstName || position?.piLastName
+      ? `Dr. ${[position.piFirstName, position.piLastName].filter(Boolean).join(' ')}`
+      : null;
+
   if (loading) {
     return (
-      <div className="min-h-screen">
+      <div className="pd-page">
         <Navbar />
-        <div className="max-w-2xl mx-auto px-4 py-8">
-          <div className="animate-pulse h-8 bg-slate-200 rounded w-2/3" />
+        <div className="pd-inner">
+          <div className="animate-pulse space-y-4">
+            <div className="h-5 bg-slate-200 rounded w-40" />
+            <div className="h-64 bg-slate-200 rounded-[10px]" />
+          </div>
         </div>
       </div>
     );
@@ -54,79 +84,122 @@ export function PositionDetail() {
 
   if (!position) {
     return (
-      <div className="min-h-screen">
+      <div className="pd-page">
         <Navbar />
-        <div className="max-w-2xl mx-auto px-4 py-8">
-          <p className="text-inherit">Position not found.</p>
-          <Link to="/student/positions" className="text-teal-600 hover:underline mt-2 inline-block">
-            Back to positions
+        <div className="pd-inner">
+          <p className="text-[#3d4260]">Position not found.</p>
+          <Link to="/student/positions" className="pd-back mt-2">
+            ← Back to positions
           </Link>
         </div>
       </div>
     );
   }
 
+  const deadlineLong = formatDeadlineLong(position.deadline);
+  const countdown = deadlineCountdown(position.deadline);
+
   return (
-    <div className="min-h-screen">
+    <div className="pd-page">
       <Navbar />
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <Link to="/student/positions" className="text-teal-600 hover:underline mb-4 inline-block">
+      <div className="pd-inner">
+        <Link to="/student/positions" className="pd-back">
           ← Back to positions
         </Link>
-        <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6">
-          <h1 className="text-2xl font-bold text-inherit">{position.title}</h1>
-          {position.labName && (
-            <p className="text-teal-600 font-medium mt-1">{position.labName}</p>
-          )}
-          {position.department && (
-            <p className="text-inherit text-sm">{position.department}</p>
-          )}
-          {position.description && (
-            <div className="mt-4 text-inherit whitespace-pre-wrap">{position.description}</div>
-          )}
-          <div className="mt-4 flex flex-wrap gap-2">
-            {position.requiredSkills?.map((s) => (
-              <span
-                key={s}
-                className="px-2 py-1 bg-slate-100 text-inherit rounded text-sm"
-              >
-                {s}
-              </span>
-            ))}
-            {position.minGpa && (
-              <span className="px-2 py-1 bg-slate-100 text-inherit rounded text-sm">
-                Min GPA: {position.minGpa}
-              </span>
-            )}
-            {position.isFunded && (
-              <span className="px-2 py-1 bg-teal-100 text-teal-800 rounded text-sm">
-                Funded
-              </span>
-            )}
+
+        <div className="pd-card">
+          <div className="pd-header-row">
+            <h1 className="pd-title">{position.title}</h1>
+            {position.isFunded ? <span className="pd-badge-funded">Funded</span> : null}
           </div>
-          {position.deadline && (
-            <p className="mt-4 text-sm text-inherit">Deadline: {position.deadline}</p>
+
+          {(position.labName || piDisplay) && (
+            <div className="pd-lab-row">
+              <FlaskConical size={16} strokeWidth={2} aria-hidden />
+              <span>
+                {position.labName || 'Research lab'}
+                {piDisplay ? ` · ${piDisplay}` : ''}
+              </span>
+            </div>
           )}
+
+          {position.department ? (
+            <p className={`pd-dept ${position.labName || piDisplay ? 'pd-dept--indented' : ''}`}>{position.department}</p>
+          ) : null}
+
+          <hr className="pd-divider" />
+
+          <div>
+            <h2 className="pd-section-label">About This Position</h2>
+            <p className="pd-desc-body">{position.description || '—'}</p>
+          </div>
+
+          <hr className="pd-divider" />
+
+          <div className="pd-req-row">
+            <div>
+              <h3 className="pd-req-label">Required Skills</h3>
+              <div className="pd-skill-chips">
+                {position.requiredSkills?.length ? (
+                  position.requiredSkills.map((s) => (
+                    <span key={s} className="pd-skill-chip">
+                      {s}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-sm text-[#8b90ad]">None specified</span>
+                )}
+              </div>
+            </div>
+            <div className="pd-meta-block">
+              <div>
+                <h3 className="pd-req-label">Minimum GPA</h3>
+                {position.minGpa != null ? (
+                  <div className="pd-min-gpa-val">{position.minGpa}</div>
+                ) : (
+                  <span className="text-sm text-[#8b90ad]">Not specified</span>
+                )}
+              </div>
+              <div>
+                <h3 className="pd-req-label">Deadline</h3>
+                {deadlineLong ? (
+                  <>
+                    <div className="pd-deadline-line">
+                      <strong>{deadlineLong}</strong>
+                    </div>
+                    {countdown.kind === 'closed' ? (
+                      <div className="pd-countdown-closed">{countdown.daysText}</div>
+                    ) : countdown.kind === 'ok' ? (
+                      <div className="pd-countdown-ok">{countdown.daysText}</div>
+                    ) : null}
+                  </>
+                ) : (
+                  <span className="text-sm text-[#8b90ad]">No deadline</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="pd-card">
+          <h2 className="pd-apply-title">Apply for This Position</h2>
           {!position.isOpen ? (
-            <p className="mt-4 text-amber-600 font-medium">This position is no longer accepting applications.</p>
+            <p className="pd-closed-msg">This position is no longer accepting applications.</p>
           ) : (
-            <form onSubmit={handleApply} className="mt-6">
-              {error && (
-                <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
-              )}
-              <label className="block text-sm font-medium text-inherit mb-1">Cover letter (optional)</label>
+            <form onSubmit={handleApply}>
+              {error ? <div className="pd-error">{error}</div> : null}
+              <label className="pd-label" htmlFor="pd-cover-letter">
+                Cover Letter (optional)
+              </label>
               <textarea
+                id="pd-cover-letter"
                 value={coverLetter}
                 onChange={(e) => setCoverLetter(e.target.value)}
-                rows={4}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 mb-4"
+                placeholder="Why are you interested in this position? Mention relevant coursework or experience..."
+                className="pd-textarea"
               />
-              <button
-                type="submit"
-                disabled={applying}
-                className="px-6 py-2 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 disabled:opacity-50"
-              >
-                {applying ? 'Applying...' : 'Apply'}
+              <button type="submit" className="pd-submit" disabled={applying}>
+                {applying ? 'Submitting…' : 'Submit Application'}
               </button>
             </form>
           )}

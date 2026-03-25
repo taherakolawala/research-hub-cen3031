@@ -1,0 +1,265 @@
+/* Student position detail — IBM Plex Sans from global */
+.pd-page {
+  min-height: 100vh;
+  background: #f6f7fb;
+  font-family: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+.pd-inner {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.pd-back {
+  display: inline-block;
+  margin-bottom: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7194;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.pd-back:hover {
+  color: #3b5bdb;
+}
+
+.pd-card {
+  background: #fff;
+  border: 1px solid #d5d8e8;
+  border-radius: 10px;
+  padding: 32px;
+  margin-bottom: 24px;
+}
+
+.pd-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.pd-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1d2e;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.pd-badge-funded {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: #d3f9d8;
+  color: #2b8a3e;
+}
+
+.pd-lab-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #6b7194;
+  margin-bottom: 4px;
+}
+
+.pd-lab-row svg {
+  flex-shrink: 0;
+  color: #91a7ff;
+}
+
+.pd-dept {
+  font-size: 13px;
+  color: #8b90ad;
+  margin: 0;
+}
+
+.pd-dept--indented {
+  margin-left: 22px;
+}
+
+.pd-divider {
+  height: 1px;
+  background: #eceef5;
+  margin: 20px 0;
+  border: none;
+}
+
+.pd-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8b90ad;
+  margin: 0 0 10px;
+}
+
+.pd-desc-body {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #3d4260;
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+.pd-req-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 640px) {
+  .pd-req-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pd-req-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8b90ad;
+  margin: 0 0 10px;
+}
+
+.pd-skill-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pd-skill-chip {
+  display: inline-block;
+  background: #edf2ff;
+  color: #3451b2;
+  border: 1px solid #dbe4ff;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.pd-meta-block {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pd-min-gpa-val {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1d2e;
+  line-height: 1.2;
+}
+
+.pd-deadline-line {
+  font-size: 14px;
+  color: #3d4260;
+}
+
+.pd-deadline-line strong {
+  font-weight: 600;
+  color: #1a1d2e;
+}
+
+.pd-countdown-ok {
+  font-size: 13px;
+  font-weight: 500;
+  color: #b35c00;
+  margin-top: 4px;
+}
+
+.pd-countdown-closed {
+  font-size: 13px;
+  font-weight: 500;
+  color: #8b90ad;
+  margin-top: 4px;
+}
+
+.pd-apply-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1d2e;
+  margin: 0 0 20px;
+}
+
+.pd-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #3d4260;
+  margin-bottom: 8px;
+}
+
+.pd-textarea {
+  width: 100%;
+  min-height: 140px;
+  padding: 12px 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  font-family: inherit;
+  color: #1a1d2e;
+  background: #f6f7fb;
+  border: 1px solid #d5d8e8;
+  border-radius: 8px;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.pd-textarea::placeholder {
+  color: #8b90ad;
+}
+
+.pd-textarea:focus {
+  border-color: #5c7cfa;
+  box-shadow: 0 0 0 3px rgba(66, 99, 235, 0.1);
+}
+
+.pd-submit {
+  margin-top: 16px;
+  padding: 11px 28px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #fff;
+  background: #3b5bdb;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.pd-submit:hover:not(:disabled) {
+  background: #4263eb;
+}
+
+.pd-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pd-error {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #c92a2a;
+  background: #fff5f5;
+  border: 1px solid #ffc9c9;
+  border-radius: 8px;
+}
+
+.pd-closed-msg {
+  font-size: 14px;
+  color: #6b7194;
+  margin: 0;
+}
