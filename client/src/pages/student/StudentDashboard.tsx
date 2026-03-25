@@ -4,15 +4,18 @@ import { Navbar } from '../../components/Navbar';
 import { Card } from '../../components/Card';
 import { StatusBadge } from '../../components/StatusBadge';
 import { api } from '../../lib/api';
+import type { Position } from '../../types';
 
 export function StudentDashboard() {
   const [applications, setApplications] = useState<Array<{ id: string; positionId: string; positionTitle?: string; labName?: string; status: string; appliedAt: string }>>([]);
+  const [recommended, setRecommended] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([api.students.getProfile(), api.applications.mine()])
-      .then(([, apps]) => {
+    Promise.all([api.applications.mine(), api.positions.recommended()])
+      .then(([apps, recs]) => {
         setApplications(apps);
+        setRecommended(recs);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -61,6 +64,54 @@ export function StudentDashboard() {
             </div>
           </Card>
         </div>
+        {recommended.length > 0 && (
+          <>
+            <h2 className="text-lg font-semibold text-inherit mb-4">Recommended Positions</h2>
+            <div className="space-y-3 mb-8">
+              {recommended.map((pos) => (
+                <Card key={pos.id}>
+                  <div className="p-4 flex justify-between items-start">
+                    <div className="flex-1 min-w-0">
+                      <Link
+                        to={`/student/positions/${pos.id}`}
+                        className="font-medium text-inherit hover:text-teal-600"
+                      >
+                        {pos.title}
+                      </Link>
+                      {pos.labName && <p className="text-sm text-inherit">{pos.labName}</p>}
+                      {pos.requiredSkills.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {pos.requiredSkills.slice(0, 4).map((skill) => (
+                            <span
+                              key={skill}
+                              className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                          {pos.requiredSkills.length > 4 && (
+                            <span className="text-xs text-slate-400">+{pos.requiredSkills.length - 4} more</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end gap-1 ml-4 shrink-0">
+                      {pos.minGpa && (
+                        <span className="text-xs text-slate-500">Min GPA: {pos.minGpa}</span>
+                      )}
+                      <Link
+                        to={`/student/positions/${pos.id}`}
+                        className="text-sm text-teal-600 hover:underline"
+                      >
+                        View →
+                      </Link>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </>
+        )}
         <h2 className="text-lg font-semibold text-inherit mb-4">Recent Applications</h2>
         {applications.length === 0 ? (
           <Card>
