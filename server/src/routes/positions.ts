@@ -124,6 +124,61 @@ router.get('/mine', authMiddleware, requireRole('pi'), asyncHandler(async (req: 
   );
 }));
 
+// GET /api/positions/recommended - top matching open positions for the logged-in student
+router.get('/recommended', authMiddleware, requireRole('student'), asyncHandler(async (req: Request, res: Response) => {
+  const studentResult = await pool.query(
+    'SELECT id, skills, gpa FROM student_profiles WHERE user_id = $1',
+    [req.userId]
+  );
+  const student = studentResult.rows[0];
+  if (!student) {
+    return res.json([]);
+  }
+
+  const studentSkills: string[] = (student.skills as string[]) || [];
+  const studentGpa: number | null = student.gpa != null ? parseFloat(student.gpa as string) : null;
+
+  const result = await pool.query(
+    `SELECT rp.*, pp.department, pp.lab_name, pp.research_areas, pp.lab_website
+     FROM research_positions rp
+     JOIN pi_profiles pp ON pp.id = rp.pi_id
+     WHERE rp.status = 'open'
+       AND rp.id NOT IN (
+         SELECT position_id FROM applications WHERE student_id = $1
+       )`,
+    [student.id]
+  );
+
+  const scored = result.rows.map((row) => {
+    const requiredSkills: string[] = (row.required_skills as string[]) || [];
+    const minGpa: number | null = row.min_gpa != null ? parseFloat(row.min_gpa as string) : null;
+
+    let skillScore = 0;
+    if (requiredSkills.length === 0) {
+      skillScore = 1;
+    } else {
+      const matchCount = requiredSkills.filter((s) =>
+        studentSkills.some((ss) => ss.toLowerCase() === s.toLowerCase())
+      ).length;
+      skillScore = matchCount / requiredSkills.length;
+    }
+
+    let gpaScore = 0;
+    if (minGpa === null) {
+      gpaScore = 1;
+    } else if (studentGpa !== null && studentGpa >= minGpa) {
+      gpaScore = 1;
+    } else if (studentGpa !== null) {
+      gpaScore = Math.max(0, 1 - (minGpa - studentGpa) / minGpa);
+    }
+
+    return { row, score: skillScore * 0.7 + gpaScore * 0.3 };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  return res.json(scored.slice(0, 4).map(({ row }) => rowToPosition(row)));
+}));
+
 // GET /api/positions/:id - detail
 router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;

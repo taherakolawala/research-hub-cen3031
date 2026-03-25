@@ -50,6 +50,8 @@ export const api = {
     me: () => request<User>('/auth/me'),
     demo: (role: 'student' | 'pi') =>
       request<{ token: string; user: User }>('/auth/demo', { method: 'POST', body: JSON.stringify({ role }) }),
+    google: (body: { credential: string; role?: 'student' | 'pi' }) =>
+      request<{ token: string; user: User }>('/auth/google', { method: 'POST', body: JSON.stringify(body) }),
   },
   students: {
     getProfile: () => request<StudentProfile>('/students/profile'),
@@ -78,6 +80,7 @@ export const api = {
       request<Position>(`/positions/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
     close: (id: string) => request<void>(`/positions/${id}`, { method: 'DELETE' }),
     mine: () => request<(Position & { appCount?: number })[]>('/positions/mine'),
+    recommended: () => request<Position[]>('/positions/recommended'),
   },
   participants: {
     getProfile: () => request<ParticipantProfile | null>('/participants/profile'),

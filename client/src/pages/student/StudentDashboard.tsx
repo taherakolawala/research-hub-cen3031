@@ -79,15 +79,22 @@ export function StudentDashboard() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [applications, setApplications] = useState<AppRow[]>([]);
+  const [recommended, setRecommended] = useState<Position[]>([]);
   const [openCount, setOpenCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([api.students.getProfile(), api.applications.mine(), api.positions.list()])
-      .then(([prof, apps, positions]) => {
+    Promise.all([
+      api.students.getProfile(),
+      api.applications.mine(),
+      api.positions.list(),
+      api.positions.recommended().catch(() => [] as Position[]),
+    ])
+      .then(([prof, apps, positions, recs]) => {
         setProfile(prof);
         setApplications(apps as AppRow[]);
         setOpenCount((positions as Position[]).length);
+        setRecommended(recs as Position[]);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -172,6 +179,56 @@ export function StudentDashboard() {
               </Link>
             </div>
           </div>
+
+          {recommended.length > 0 ? (
+            <section className="sd-rec-block" aria-label="Recommended positions">
+              <div className="sd-card">
+                <div className="sd-card-head">
+                  <h2 className="sd-card-head-title">Recommended Positions</h2>
+                  <Link to="/student/positions" className="sd-card-head-link">
+                    Browse all →
+                  </Link>
+                </div>
+                {recommended.map((pos) => {
+                  const skills = pos.requiredSkills || [];
+                  const show = skills.slice(0, 4);
+                  const rest = skills.length - show.length;
+                  return (
+                    <Link
+                      key={pos.id}
+                      to={`/student/positions/${pos.id}`}
+                      className="sd-rec-row"
+                    >
+                      <div className="sd-rec-main">
+                        <p className="sd-rec-title">{pos.title}</p>
+                        {pos.labName?.trim() ? (
+                          <p className="sd-rec-lab">{pos.labName}</p>
+                        ) : null}
+                        {show.length > 0 ? (
+                          <div className="sd-rec-skills">
+                            {show.map((skill) => (
+                              <span key={skill} className="sd-rec-skill">
+                                {skill}
+                              </span>
+                            ))}
+                            {rest > 0 ? (
+                              <span className="sd-rec-more">+{rest} more</span>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className="sd-rec-aside">
+                        {pos.minGpa != null ? (
+                          <p className="sd-rec-gpa">Min GPA: {pos.minGpa}</p>
+                        ) : null}
+                        <span className="sd-rec-view">View →</span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
 
           <div className="sd-two-col">
             <div className="sd-card">
