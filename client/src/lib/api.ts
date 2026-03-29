@@ -1,4 +1,4 @@
-import type { User, StudentProfile, PIProfile, Position, Application, LabRosterMember } from '../types';
+import type { User, StudentProfile, PIProfile, Position, Application, LabRosterMember, Conversation, Message } from '../types';
 
 const API_BASE = '/api';
 
@@ -94,5 +94,15 @@ export const api = {
       ),
     updateStatus: (id: string, status: string) =>
       request<Application>(`/applications/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  },
+  messages: {
+    sendMessage: (recipientId: string, body: string) =>
+      request<Message>('/messages', { method: 'POST', body: JSON.stringify({ recipientId, body }) }),
+    getConversations: () =>
+      request<Conversation[]>('/messages/conversations'),
+    getConversationMessages: (conversationId: string) =>
+      request<Message[]>(`/messages/conversations/${conversationId}`),
+    markAsRead: (messageId: string) =>
+      request<Message>(`/messages/${messageId}/read`, { method: 'PATCH' }),
   },
 };
