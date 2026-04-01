@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import { supabaseAdmin } from '../config/supabase';
-import { ApiResponse } from '@research-hub/shared';
 import { AppError } from '../middleware/errorHandler';
 import {
   StudyListing,
@@ -9,6 +8,8 @@ import {
   UPDATE_ALLOWED_FIELDS,
   UpdateStudyBody,
 } from '../types/studyListing';
+
+type ApiResponse<T> = { success: true; data: T } | { success: true; data: T; message: string } | { success: false; error: string };
 
 // ---------------------------------------------------------------------------
 // PUT /api/studies/:id
@@ -30,7 +31,7 @@ export async function updateStudy(
       .maybeSingle();
 
     if (fetchError) {
-      const err: AppError = new Error(fetchError.message);
+      const err = new AppError(fetchError.message);
       err.statusCode = 500;
       return next(err);
     }
@@ -83,7 +84,7 @@ export async function updateStudy(
       .single();
 
     if (error) {
-      const err: AppError = new Error(error.message);
+      const err = new AppError(error.message);
       err.statusCode = 500;
       return next(err);
     }
@@ -115,7 +116,7 @@ export async function closeStudy(
       .maybeSingle();
 
     if (fetchError) {
-      const err: AppError = new Error(fetchError.message);
+      const err = new AppError(fetchError.message);
       err.statusCode = 500;
       return next(err);
     }
@@ -146,7 +147,7 @@ export async function closeStudy(
       .single();
 
     if (error) {
-      const err: AppError = new Error(error.message);
+      const err = new AppError(error.message);
       err.statusCode = 500;
       return next(err);
     }
@@ -198,7 +199,7 @@ export async function listStudies(
     const { data, error } = await query;
 
     if (error) {
-      const err: AppError = new Error(error.message);
+      const err = new AppError(error.message);
       err.statusCode = 500;
       return next(err);
     }
@@ -229,7 +230,7 @@ export async function getStudyById(
       .maybeSingle();
 
     if (error) {
-      const err: AppError = new Error(error.message);
+      const err = new AppError(error.message);
       err.statusCode = 500;
       return next(err);
     }
@@ -271,7 +272,7 @@ export async function createStudy(
       .maybeSingle();
 
     if (piError) {
-      const err: AppError = new Error('Database error while verifying PI profile');
+      const err = new AppError('Database error while verifying PI profile');
       err.statusCode = 500;
       return next(err);
     }
@@ -299,7 +300,7 @@ export async function createStudy(
       .single();
 
     if (error) {
-      const err: AppError = new Error(error.message);
+      const err = new AppError(error.message);
       err.statusCode = 500;
       return next(err);
     }
