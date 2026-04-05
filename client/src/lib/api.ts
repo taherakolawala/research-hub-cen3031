@@ -102,5 +102,7 @@ export const api = {
       ),
     updateStatus: (id: string, status: string) =>
       request<Application>(`/applications/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+    updateNotes: (id: string, notes: string) =>
+      request<{ id: string; piNotes: string | null }>(`/applications/${id}/notes`, { method: 'PATCH', body: JSON.stringify({ notes }) }),
   },
 };
