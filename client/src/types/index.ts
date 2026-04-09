@@ -131,6 +131,7 @@ export interface Position {
   researchArea?: string;
   labWebsite?: string;
   /** Present on position detail (from PI user record) */
+  piUserId?: string;
   piFirstName?: string;
   piLastName?: string;
   /** Custom questions applicants answer (set by PI) */

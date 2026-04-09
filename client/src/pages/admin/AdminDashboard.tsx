@@ -76,8 +76,10 @@ export function AdminDashboard() {
       ]);
       setMetrics(m);
       setPIs(piList);
-    } catch {
-      setError('Failed to load dashboard. Ensure the backend is running and you are logged in as a lab administrator.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[AdminDashboard] load error:', err);
+      setError(`Failed to load dashboard (${msg}). Ensure the backend is running and you are logged in as a lab administrator.`);
     } finally {
       setLoading(false);
     }

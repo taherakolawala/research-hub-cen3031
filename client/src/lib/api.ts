@@ -17,6 +17,14 @@ import type {
 
 const API_BASE = '/api';
 
+/** Build a query string, omitting keys whose value is undefined, null, or empty string. */
+function toQuery(params?: Record<string, string | number | boolean | undefined | null>): string {
+  if (!params) return '';
+  const entries = Object.entries(params).filter(([, v]) => v != null && v !== '');
+  if (!entries.length) return '';
+  return '?' + new URLSearchParams(entries.map(([k, v]) => [k, String(v)])).toString();
+}
+
 let token: string | null = null;
 
 export function setAuthToken(t: string | null) {
@@ -78,10 +86,8 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify(body),
       }),
-    list: (params?: { major?: string; minGpa?: number; skills?: string; yearLevel?: string }) => {
-      const q = new URLSearchParams(params as Record<string, string>).toString();
-      return request<StudentProfile[]>(`/students${q ? `?${q}` : ''}`);
-    },
+    list: (params?: { major?: string; minGpa?: number; skills?: string; yearLevel?: string }) =>
+      request<StudentProfile[]>(`/students${toQuery(params)}`),
     getById: (id: string) => request<StudentProfile>(`/students/${id}`),
   },
   pis: {
@@ -92,10 +98,8 @@ export const api = {
     listLabs: () => request<LabAdminOption[]>('/pis/labs'),
   },
   positions: {
-    list: (params?: { search?: string; skills?: string; isFunded?: string; department?: string }) => {
-      const q = new URLSearchParams(params as Record<string, string>).toString();
-      return request<Position[]>(`/positions${q ? `?${q}` : ''}`);
-    },
+    list: (params?: { search?: string; skills?: string; isFunded?: string; department?: string }) =>
+      request<Position[]>(`/positions${toQuery(params)}`),
     getById: (id: string) => request<Position>(`/positions/${id}`),
     create: (body: Partial<Position> & { title: string }) =>
       request<Position>('/positions', { method: 'POST', body: JSON.stringify(body) }),
@@ -136,10 +140,8 @@ export const api = {
       }>(`/messages/${messageId}/read`, { method: 'PATCH' }),
   },
   admin: {
-    getMetrics: (params?: { startDate?: string; endDate?: string; positionType?: string; piId?: string }) => {
-      const q = new URLSearchParams(params as Record<string, string>).toString();
-      return request<AdminMetrics>(`/admin/metrics${q ? `?${q}` : ''}`);
-    },
+    getMetrics: (params?: { startDate?: string; endDate?: string; positionType?: string; piId?: string }) =>
+      request<AdminMetrics>(`/admin/metrics${toQuery(params)}`),
     getPIs: () => request<LabPIMember[]>('/admin/pis'),
   },
   applications: {
