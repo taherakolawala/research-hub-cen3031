@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send } from 'lucide-react';
 import { Navbar } from '../../components/Navbar';
@@ -72,7 +72,7 @@ export function ChatView() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     if (!body.trim() || !conversation?.otherParticipant || sending) return;
     setSendError('');
     setSending(true);
@@ -86,7 +86,7 @@ export function ChatView() {
     } finally {
       setSending(false);
     }
-  };
+  }, [body, conversation, sending]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
