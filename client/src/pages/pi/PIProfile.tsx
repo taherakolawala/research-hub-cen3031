@@ -130,8 +130,18 @@ export function PIProfile() {
           {/* Lab details */}
           <div className="space-y-4">
             {isLabLocked && (
-              <div className="flex items-start gap-2 px-4 py-3 rounded-lg text-sm bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300">
-                <Lock size={15} className="mt-0.5 shrink-0" />
+              <div style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '0.5rem',
+                padding: '0.75rem 1rem',
+                borderRadius: '0.5rem',
+                fontSize: '0.875rem',
+                background: '#fffbeb',
+                border: '1px solid #f59e0b',
+                color: '#92400e',
+              }}>
+                <Lock size={15} style={{ marginTop: '0.125rem', flexShrink: 0, color: '#b45309' }} />
                 <span>
                   <strong>Department</strong> and <strong>Lab Name</strong> are managed by your lab administrator ({selectedLab?.displayName}) and cannot be edited here.
                 </span>
