@@ -179,12 +179,15 @@ router.get('/conversations', authMiddleware, asyncHandler(async (req: Request, r
        WHERE cp.conversation_id = $1 AND cp.user_id != $2`,
       [conv.id, req.userId]
     );
+    const p = participants.rows[0];
     return {
       id: conv.id,
       lastMessage: conv.last_message,
       lastMessageAt: conv.last_message_at,
       unreadCount: parseInt(conv.unread_count, 10),
-      otherParticipant: participants.rows[0] || null,
+      otherParticipant: p
+        ? { id: p.id, firstName: p.first_name, lastName: p.last_name, email: p.email, role: p.role }
+        : null,
       createdAt: conv.created_at,
       updatedAt: conv.updated_at,
     };

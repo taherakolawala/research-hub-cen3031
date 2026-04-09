@@ -144,7 +144,7 @@ export function ChatView() {
   };
 
   const otherName = conversation?.otherParticipant
-    ? `${conversation.otherParticipant.firstName} ${conversation.otherParticipant.lastName}`.trim() ||
+    ? `${conversation.otherParticipant.firstName ?? ''} ${conversation.otherParticipant.lastName ?? ''}`.trim() ||
       conversation.otherParticipant.email
     : 'Conversation';
 

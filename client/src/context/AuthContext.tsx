@@ -4,6 +4,18 @@ import type { User, UserRole } from '../types';
 
 const TOKEN_KEY = 'rh_token';
 
+function persist(token: string, u: User) {
+  localStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem('rh_user', JSON.stringify(u));
+  setAuthToken(token);
+}
+
+function clear() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem('rh_user');
+  setAuthToken(null);
+}
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
@@ -16,44 +28,22 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const TOKEN_KEY = 'rh_token';
-
-function persist(token: string, u: User) {
-  localStorage.setItem(TOKEN_KEY, token);
-  localStorage.setItem('rh_user', JSON.stringify(u));
-}
-
-function clear() {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem('rh_user');
-function persistToken(token: string) {
-  localStorage.setItem(TOKEN_KEY, token);
-  setAuthToken(token);
-}
-
-function clearToken() {
-  localStorage.removeItem(TOKEN_KEY);
-  setAuthToken(null);
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-const loadUser = useCallback(async () => {
-  const stored = localStorage.getItem(TOKEN_KEY);
-  if (!stored) {
-    setLoading(false);
-    return;
-  }
-  setAuthToken(stored);
-  try {
-    const u = await api.auth.me();
-    setUser(u);
-  } catch {
-    // Token invalid or expired — clear it so the user starts fresh
-    clear();
-  }
+  const loadUser = useCallback(async () => {
+    const stored = localStorage.getItem(TOKEN_KEY);
+    if (!stored) {
+      setLoading(false);
+      return;
+    }
+    setAuthToken(stored);
+    try {
+      const u = await api.auth.me();
+      setUser(u);
+    } catch {
+      clear();
     } finally {
       setLoading(false);
     }
@@ -65,9 +55,8 @@ const loadUser = useCallback(async () => {
 
   const login = async (email: string, password: string) => {
     const { token, user: u } = await api.auth.login({ email, password });
-    persistToken(token);
-    setUser(u);
     persist(token, u);
+    setUser(u);
     return u;
   };
 
@@ -78,39 +67,29 @@ const loadUser = useCallback(async () => {
     firstName: string,
     lastName: string
   ) => {
-    const { token, user: u } = await api.auth.register({
-      email,
-      password,
-      role,
-      firstName,
-      lastName,
-    });
-    persistToken(token);
-    setUser(u);
+    const { token, user: u } = await api.auth.register({ email, password, role, firstName, lastName });
     persist(token, u);
+    setUser(u);
     return u;
   };
 
   const loginWithGoogle = async (credential: string, role?: UserRole) => {
     const { token, user: u } = await api.auth.google({ credential, role });
-    persistToken(token);
-    setUser(u);
     persist(token, u);
+    setUser(u);
     return u;
   };
 
   const loginDemo = async (role: 'student' | 'pi') => {
     const { token, user: u } = await api.auth.demo(role);
-    persistToken(token);
-    setUser(u);
     persist(token, u);
+    setUser(u);
     return u;
   };
 
   const logout = () => {
-    clearToken();
-    setUser(null);
     clear();
+    setUser(null);
   };
 
   return (

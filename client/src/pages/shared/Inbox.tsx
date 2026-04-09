@@ -162,7 +162,7 @@ export function Inbox() {
             {conversations.map((conv) => {
               const other = conv.otherParticipant;
               const displayName = other
-                ? `${other.firstName} ${other.lastName}`.trim() || other.email
+                ? `${other.firstName ?? ''} ${other.lastName ?? ''}`.trim() || other.email
                 : 'Unknown';
               const initials = other
                 ? `${other.firstName?.[0] ?? ''}${other.lastName?.[0] ?? ''}`.toUpperCase() || '?'

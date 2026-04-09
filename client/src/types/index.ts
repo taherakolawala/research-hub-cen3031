@@ -12,21 +12,12 @@ export interface NotificationPreferences {
   notificationFrequency: NotificationFrequency;
 }
 
-/** Raw shape from GET /api/messages/conversations (other participant row) */
-export interface ConversationOtherParticipant {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  email: string;
-  role: string;
-}
-
 export interface ConversationSummary {
   id: string;
   lastMessage: string | null;
   lastMessageAt: string | null;
   unreadCount: number;
-  otherParticipant: ConversationOtherParticipant | null;
+  otherParticipant: ConversationParticipant | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,8 +1,8 @@
-import type { ConversationOtherParticipant } from '../types';
+import type { ConversationParticipant } from '../types';
 
-export function formatParticipantName(p: ConversationOtherParticipant | null): string {
+export function formatParticipantName(p: ConversationParticipant | null): string {
   if (!p) return 'Unknown';
-  const n = [p.first_name, p.last_name].filter(Boolean).join(' ').trim();
+  const n = [p.firstName, p.lastName].filter(Boolean).join(' ').trim();
   return n || p.email || 'User';
 }
 
