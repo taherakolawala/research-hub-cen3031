@@ -34,7 +34,15 @@ export function Inbox() {
   useEffect(() => {
     api.messages
       .getConversations()
-      .then((data) => setConversations(data))
+      .then((data) => {
+        // Sort by most recent message descending; conversations with no messages go last
+        const sorted = [...data].sort((a, b) => {
+          const ta = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+          const tb = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+          return tb - ta;
+        });
+        setConversations(sorted);
+      })
       .catch(() => setConversations([]))
       .finally(() => setLoading(false));
   }, []);
