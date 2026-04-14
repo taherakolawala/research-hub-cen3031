@@ -89,7 +89,7 @@ export const api = {
     mine: () =>
       request<(Application & { positionTitle?: string; labName?: string; department?: string | null })[]>('/applications/mine'),
     byPosition: (positionId: string) =>
-      request<(Application & { firstName?: string; lastName?: string; email?: string; major?: string; gpa?: number; skills?: string[]; bio?: string; resumeUrl?: string; yearLevel?: string })[]>(
+      request<(Application & { studentUserId?: string; firstName?: string; lastName?: string; email?: string; major?: string; gpa?: number; skills?: string[]; bio?: string; resumeUrl?: string; yearLevel?: string })[]>(
         `/applications/position/${positionId}`
       ),
     updateStatus: (id: string, status: string) =>
