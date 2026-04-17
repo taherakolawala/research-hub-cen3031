@@ -88,9 +88,8 @@ export function PositionApplications() {
     if (!app.studentUserId || messagingStudentId) return;
     setMessagingStudentId(app.id);
     try {
-      const name = [app.firstName, app.lastName].filter(Boolean).join(' ') || 'you';
-      await api.messages.sendMessage(app.studentUserId, `Hi ${app.firstName ?? name}, I wanted to reach out regarding your application to "${positionTitle}".`);
-      navigate('/pi/inbox');
+      const { conversationId } = await api.messages.findOrCreateConversation(app.studentUserId);
+      navigate(`/pi/inbox/${conversationId}`);
     } catch {
       setMessagingStudentId(null);
     }
