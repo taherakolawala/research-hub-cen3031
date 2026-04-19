@@ -157,8 +157,11 @@ export function StudentList() {
         <div className="bs-page">
           <div className="bs-container">
             <header className="bs-header">
-              <h1 className="bs-title">Browse Students</h1>
-              <p className="bs-subtitle">{allStudents.length} students registered</p>
+              <h1 className="bs-title">Students</h1>
+              <p className="bs-subtitle">
+                {allStudents.length} with a profile on ResearchHub — browse, open a profile, and reach out (e.g. email)
+                to recruit. Your active hires are listed under Lab → Roster.
+              </p>
             </header>
 
             <div className="bs-filters">

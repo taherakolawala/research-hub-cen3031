@@ -8,6 +8,22 @@ import { asyncHandler } from '../lib/asyncHandler.js';
 
 const router = Router();
 
+/** Supabase Storage bucket id (must match dashboard bucket name) */
+const RESUMES_STORAGE_BUCKET = 'Resumes';
+
+/** Path inside the resumes bucket from a Supabase public object URL, or null */
+function resumeObjectPathFromPublicUrl(resumeUrl: string): string | null {
+  try {
+    const url = new URL(resumeUrl);
+    const marker = `/object/public/${RESUMES_STORAGE_BUCKET}/`;
+    const idx = url.pathname.indexOf(marker);
+    if (idx === -1) return null;
+    return decodeURIComponent(url.pathname.slice(idx + marker.length));
+  } catch {
+    return null;
+  }
+}
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
@@ -213,7 +229,7 @@ router.post('/resume', authMiddleware, requireRole('student'), upload.single('re
   const filePath = `${student.id}/${safeName}`;
 
   const { error: uploadError } = await supabaseAdmin.storage
-    .from('resumes')
+    .from(RESUMES_STORAGE_BUCKET)
     .upload(filePath, file.buffer, {
       contentType: 'application/pdf',
       upsert: true,
@@ -223,7 +239,7 @@ router.post('/resume', authMiddleware, requireRole('student'), upload.single('re
     return res.status(500).json({ error: 'Upload failed: ' + uploadError.message });
   }
 
-  const { data: urlData } = supabaseAdmin.storage.from('resumes').getPublicUrl(filePath);
+  const { data: urlData } = supabaseAdmin.storage.from(RESUMES_STORAGE_BUCKET).getPublicUrl(filePath);
   const resumeUrl = `${urlData.publicUrl}?t=${Date.now()}`;
 
   await pool.query('UPDATE student_profiles SET resume_url = $1, updated_at = NOW() WHERE user_id = $2', [resumeUrl, req.userId]);
@@ -239,9 +255,10 @@ router.delete('/resume', authMiddleware, requireRole('student'), asyncHandler(as
     return res.status(404).json({ error: 'Student profile not found' });
   }
   if (row.resume_url) {
-    const url = new URL(row.resume_url);
-    const filePath = path.basename(url.pathname);
-    await supabaseAdmin.storage.from('resumes').remove([filePath]);
+    const objectPath = resumeObjectPathFromPublicUrl(row.resume_url);
+    if (objectPath) {
+      await supabaseAdmin.storage.from(RESUMES_STORAGE_BUCKET).remove([objectPath]);
+    }
   }
   await pool.query('UPDATE student_profiles SET resume_url = NULL, updated_at = NOW() WHERE user_id = $1', [req.userId]);
   return res.status(204).send();

@@ -5,6 +5,63 @@ import { asyncHandler } from '../lib/asyncHandler.js';
 
 const router = Router();
 
+// GET /api/pis/roster — students currently in the lab (accepted on this PI's positions)
+router.get('/roster', authMiddleware, requireRole('pi'), asyncHandler(async (req: Request, res: Response) => {
+  const piResult = await pool.query('SELECT id FROM pi_profiles WHERE user_id = $1', [req.userId]);
+  const pi = piResult.rows[0];
+  if (!pi) {
+    return res.status(404).json({ error: 'PI profile not found' });
+  }
+
+  const result = await pool.query(
+    `SELECT
+       sp.id,
+       sp.user_id,
+       sp.major,
+       sp.gpa,
+       sp.graduation_year,
+       sp.skills,
+       sp.bio,
+       sp.resume_url,
+       sp.academic_level,
+       sp.interests,
+       u.first_name,
+       u.last_name,
+       u.email,
+       MIN(a.updated_at) AS in_lab_since,
+       ARRAY_REMOVE(ARRAY_AGG(DISTINCT rp.title), NULL) AS position_titles
+     FROM applications a
+     JOIN research_positions rp ON rp.id = a.position_id
+     JOIN student_profiles sp ON sp.id = a.student_id
+     JOIN users u ON u.id = sp.user_id
+     WHERE rp.pi_id = $1 AND a.status = 'accepted'
+     GROUP BY sp.id, sp.user_id, sp.major, sp.gpa, sp.graduation_year, sp.skills, sp.bio, sp.resume_url,
+              sp.academic_level, sp.interests, u.first_name, u.last_name, u.email
+     ORDER BY in_lab_since DESC`,
+    [pi.id]
+  );
+
+  return res.json(
+    result.rows.map((row) => ({
+      id: row.id,
+      userId: row.user_id,
+      major: row.major,
+      gpa: row.gpa ? parseFloat(row.gpa) : null,
+      graduationYear: row.graduation_year,
+      skills: row.skills || [],
+      bio: row.bio,
+      resumeUrl: row.resume_url,
+      yearLevel: row.academic_level,
+      interests: row.interests || [],
+      firstName: row.first_name,
+      lastName: row.last_name,
+      email: row.email,
+      acceptedPositionTitles: (row.position_titles || []).filter(Boolean),
+      inLabSince: row.in_lab_since,
+    }))
+  );
+}));
+
 // GET /api/pis/profile - own profile
 router.get('/profile', authMiddleware, requireRole('pi'), asyncHandler(async (req: Request, res: Response) => {
   const result = await pool.query(

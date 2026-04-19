@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navbar } from '../../components/Navbar';
-import { api } from '../../lib/api';
+import { api, getAuthToken } from '../../lib/api';
 import type { AcademicLevel } from '../../types';
 
 const YEAR_LEVELS: AcademicLevel[] = ['freshman', 'sophomore', 'junior', 'senior', 'grad', 'masters', 'phd', 'postdoc'];
@@ -76,19 +76,25 @@ export function StudentProfile() {
       return;
     }
     setUploadError('');
+    const authToken = getAuthToken();
+    if (!authToken) {
+      setUploadError('You need to be logged in to upload a resume.');
+      return;
+    }
     setUploading(true);
     const fd = new FormData();
     fd.append('resume', file);
     try {
-      const data = await (await fetch('/api/students/resume', {
+      const res = await fetch('/api/students/resume', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        headers: { Authorization: `Bearer ${authToken}` },
         body: fd,
-      })).json();
-      if (data.resumeUrl) {
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.resumeUrl) {
         setForm((f) => ({ ...f, resumeUrl: data.resumeUrl }));
       } else {
-        setUploadError(data.error || 'Upload failed');
+        setUploadError((data as { error?: string }).error || 'Upload failed');
       }
     } catch {
       setUploadError('Upload failed');
@@ -98,12 +104,22 @@ export function StudentProfile() {
   };
 
   const handleRemoveResume = async () => {
+    const authToken = getAuthToken();
+    if (!authToken) {
+      setError('You need to be logged in.');
+      return;
+    }
     try {
-      await fetch('/api/students/resume', {
+      const res = await fetch('/api/students/resume', {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        headers: { Authorization: `Bearer ${authToken}` },
       });
-      setForm((f) => ({ ...f, resumeUrl: '' }));
+      if (res.ok) {
+        setForm((f) => ({ ...f, resumeUrl: '' }));
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError((data as { error?: string }).error || 'Failed to remove resume');
+      }
     } catch {
       setError('Failed to remove resume');
     }
