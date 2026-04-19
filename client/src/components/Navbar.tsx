@@ -9,6 +9,7 @@ import {
   User,
   Users,
   Settings,
+  UsersRound,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -31,6 +32,7 @@ function studentNavActive(pathname: string, url: string): boolean {
 function piNavActive(pathname: string, url: string): boolean {
   if (url === '/pi/dashboard') return pathname === '/pi/dashboard';
   if (url === '/pi/positions/new') return pathname.startsWith('/pi/positions');
+  if (url === '/pi/roster') return pathname === '/pi/roster';
   if (url === '/pi/students') return pathname.startsWith('/pi/students');
   if (url === '/pi/profile') return pathname === '/pi/profile';
   return false;
@@ -53,13 +55,16 @@ const studentAccountItems: NavItem[] = [
   { name: 'Settings', url: '/student/settings', icon: Settings },
 ];
 
-const piMainItems: NavItem[] = [
+const piLabItems: NavItem[] = [
   { name: 'Dashboard', url: '/pi/dashboard', icon: LayoutDashboard },
   { name: 'Positions', url: '/pi/positions/new', icon: Briefcase },
-  { name: 'Students', url: '/pi/students', icon: Users },
+  { name: 'Roster', url: '/pi/roster', icon: UsersRound },
 ];
 
-const piAccountItems: NavItem[] = [{ name: 'Profile', url: '/pi/profile', icon: User }];
+const piAccountItems: NavItem[] = [
+  { name: 'Profile', url: '/pi/profile', icon: User },
+  { name: 'Students', url: '/pi/students', icon: Users },
+];
 
 const sectionLabelClass = 'px-6 pt-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider';
 const sectionLabelStyle = { color: '#8b90ad' } as const;
@@ -136,10 +141,10 @@ export function Navbar() {
         {user?.role === 'pi' && (
           <>
             <div className={sectionLabelClass} style={sectionLabelStyle}>
-              Workspace
+              Lab
             </div>
             <div className="px-3 space-y-0.5">
-              {piMainItems.map((item) => renderLink(item, piNavActive(pathname, item.url)))}
+              {piLabItems.map((item) => renderLink(item, piNavActive(pathname, item.url)))}
             </div>
             <div className={sectionLabelClass} style={sectionLabelStyle}>
               Account

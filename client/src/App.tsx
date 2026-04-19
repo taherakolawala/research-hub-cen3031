@@ -17,6 +17,7 @@ import { PositionEdit } from './pages/pi/PositionEdit';
 import { PositionApplications } from './pages/pi/PositionApplications';
 import { StudentList } from './pages/pi/StudentList';
 import { StudentDetail } from './pages/pi/StudentDetail';
+import { LabRoster } from './pages/pi/LabRoster';
 
 function App() {
   return (
@@ -51,6 +52,7 @@ function App() {
             }
           >
             <Route path="dashboard" element={<PIDashboard />} />
+            <Route path="roster" element={<LabRoster />} />
             <Route path="profile" element={<PIProfile />} />
             <Route path="positions/new" element={<PositionNew />} />
             <Route path="positions/:id/edit" element={<PositionEdit />} />

@@ -31,6 +31,13 @@ export interface StudentProfile {
   email?: string;
 }
 
+/** PI lab roster: students with an accepted application to one of this PI's positions */
+export interface LabRosterMember extends StudentProfile {
+  acceptedPositionTitles: string[];
+  /** ISO timestamp — earliest acceptance update for this PI's positions */
+  inLabSince: string;
+}
+
 export interface PIProfile {
   id: string;
   userId?: string;

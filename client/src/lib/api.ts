@@ -1,4 +1,4 @@
-import type { User, StudentProfile, PIProfile, Position, Application } from '../types';
+import type { User, StudentProfile, PIProfile, Position, Application, LabRosterMember } from '../types';
 
 const API_BASE = '/api';
 
@@ -67,6 +67,7 @@ export const api = {
     getProfile: () => request<PIProfile>('/pis/profile'),
     updateProfile: (body: Partial<PIProfile>) =>
       request<PIProfile>('/pis/profile', { method: 'PUT', body: JSON.stringify(body) }),
+    getRoster: () => request<LabRosterMember[]>('/pis/roster'),
   },
   positions: {
     list: (params?: { search?: string; skills?: string; isFunded?: string; department?: string }) => {
