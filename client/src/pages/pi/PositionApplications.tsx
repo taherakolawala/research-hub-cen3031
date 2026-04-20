@@ -350,12 +350,56 @@ export function PositionApplications() {
                               View / Note
                             </button>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </>
+                        ) : null}
+                      </div>
+                      <div className="pa-actions">
+                        <span className={pillClass(app.status)}>{pillLabel(app.status)}</span>
+                        <select
+                          className="pa-select"
+                          value={app.status}
+                          onChange={(e) => updateStatus(app.id, e.target.value)}
+                          disabled={updating}
+                          aria-label={`Status for ${name}`}
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="reviewing">Reviewing</option>
+                          <option value="accepted">Accepted</option>
+                          <option value="rejected">Rejected</option>
+                          <option value="withdrawn">Withdrawn</option>
+                        </select>
+                        <Link to={`/pi/students/${app.studentId}`} className="pa-profile-link">
+                          View Profile
+                        </Link>
+                        {app.studentUserId && (
+                          <button
+                            type="button"
+                            onClick={() => { void handleMessageStudent(app); }}
+                            disabled={!!messagingStudentId}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                              padding: '0.3rem 0.65rem',
+                              borderRadius: '8px',
+                              border: '1px solid rgba(0,82,204,0.35)',
+                              background: 'rgba(0,82,204,0.06)',
+                              color: '#0052CC',
+                              fontSize: '0.78rem',
+                              fontWeight: 600,
+                              cursor: messagingStudentId ? 'not-allowed' : 'pointer',
+                              opacity: messagingStudentId ? 0.6 : 1,
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            <MessageSquare size={13} strokeWidth={2} />
+                            {messagingStudentId === app.id ? 'Opening…' : 'Message'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         </div>
