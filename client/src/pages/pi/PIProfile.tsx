@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Building2, Link2, CheckCircle2 } from 'lucide-react';
+import { Building2, Link2, CheckCircle2, Lock } from 'lucide-react';
 import { Navbar } from '../../components/Navbar';
 import { api } from '../../lib/api';
 import type { LabAdminOption } from '../../types';
@@ -42,8 +42,11 @@ export function PIProfile() {
     setSaved(false);
     try {
       await api.pis.updateProfile({
-        department: form.department || null,
-        labName: form.labName || null,
+        // Department and Lab Name are admin-managed when associated with a lab
+        ...(isLabLocked ? {} : {
+          department: form.department || null,
+          labName: form.labName || null,
+        }),
         researchArea: form.researchArea || null,
         labWebsite: form.labWebsite || null,
         labAdminId: form.labAdminId || null,
@@ -58,6 +61,7 @@ export function PIProfile() {
   };
 
   const selectedLab = labs.find((l) => l.id === form.labAdminId);
+  const isLabLocked = Boolean(form.labAdminId);
 
   if (loading) {
     return (
@@ -125,24 +129,53 @@ export function PIProfile() {
 
           {/* Lab details */}
           <div className="space-y-4">
+            {isLabLocked && (
+              <div className="flex items-start gap-2 px-4 py-3 rounded-lg text-sm bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300">
+                <Lock size={15} className="mt-0.5 shrink-0" />
+                <span>
+                  <strong>Department</strong> and <strong>Lab Name</strong> are managed by your lab administrator ({selectedLab?.displayName}) and cannot be edited here.
+                </span>
+              </div>
+            )}
+
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Department</label>
-              <input
-                type="text"
-                value={form.department}
-                onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))}
-                className="w-full px-4 py-2 border border-input bg-background text-foreground rounded-lg focus:ring-2 focus:ring-ring"
-              />
+              <label className="block text-sm font-medium text-foreground mb-1 flex items-center gap-1.5">
+                Department
+                {isLabLocked && <Lock size={12} className="text-muted-foreground" />}
+              </label>
+              {isLabLocked ? (
+                <div className="w-full px-4 py-2 border border-input bg-muted text-muted-foreground rounded-lg text-sm select-none">
+                  {form.department || <span className="italic">Not set</span>}
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  value={form.department}
+                  onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))}
+                  className="w-full px-4 py-2 border border-input bg-background text-foreground rounded-lg focus:ring-2 focus:ring-ring"
+                />
+              )}
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Lab Name</label>
-              <input
-                type="text"
-                value={form.labName}
-                onChange={(e) => setForm((f) => ({ ...f, labName: e.target.value }))}
-                className="w-full px-4 py-2 border border-input bg-background text-foreground rounded-lg focus:ring-2 focus:ring-ring"
-              />
+              <label className="block text-sm font-medium text-foreground mb-1 flex items-center gap-1.5">
+                Lab Name
+                {isLabLocked && <Lock size={12} className="text-muted-foreground" />}
+              </label>
+              {isLabLocked ? (
+                <div className="w-full px-4 py-2 border border-input bg-muted text-muted-foreground rounded-lg text-sm select-none">
+                  {form.labName || <span className="italic">Not set</span>}
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  value={form.labName}
+                  onChange={(e) => setForm((f) => ({ ...f, labName: e.target.value }))}
+                  className="w-full px-4 py-2 border border-input bg-background text-foreground rounded-lg focus:ring-2 focus:ring-ring"
+                />
+              )}
             </div>
+
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Research Area</label>
               <textarea
@@ -152,6 +185,7 @@ export function PIProfile() {
                 className="w-full px-4 py-2 border border-input bg-background text-foreground rounded-lg focus:ring-2 focus:ring-ring"
               />
             </div>
+
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Lab Website</label>
               <input

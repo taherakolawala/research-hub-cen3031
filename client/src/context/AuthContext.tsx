@@ -16,6 +16,16 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+const TOKEN_KEY = 'rh_token';
+
+function persist(token: string, u: User) {
+  localStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem('rh_user', JSON.stringify(u));
+}
+
+function clear() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem('rh_user');
 function persistToken(token: string) {
   localStorage.setItem(TOKEN_KEY, token);
   setAuthToken(token);
@@ -30,22 +40,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // On mount: restore token from localStorage and fetch the current user.
-  // If the token is missing or expired the API call fails silently and we
-  // stay logged-out, which is the correct behaviour.
-  const loadUser = useCallback(async () => {
-    const stored = localStorage.getItem(TOKEN_KEY);
-    if (!stored) {
-      setLoading(false);
-      return;
-    }
-    setAuthToken(stored);
-    try {
-      const u = await api.auth.me();
-      setUser(u);
-    } catch {
-      // Token invalid or expired — clear it so the user starts fresh
-      clearToken();
+const loadUser = useCallback(async () => {
+  const stored = localStorage.getItem(TOKEN_KEY);
+  if (!stored) {
+    setLoading(false);
+    return;
+  }
+  setAuthToken(stored);
+  try {
+    const u = await api.auth.me();
+    setUser(u);
+  } catch {
+    // Token invalid or expired — clear it so the user starts fresh
+    clear();
+  }
     } finally {
       setLoading(false);
     }
@@ -59,6 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { token, user: u } = await api.auth.login({ email, password });
     persistToken(token);
     setUser(u);
+    persist(token, u);
     return u;
   };
 
@@ -78,6 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     persistToken(token);
     setUser(u);
+    persist(token, u);
     return u;
   };
 
@@ -85,6 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { token, user: u } = await api.auth.google({ credential, role });
     persistToken(token);
     setUser(u);
+    persist(token, u);
     return u;
   };
 
@@ -92,12 +103,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { token, user: u } = await api.auth.demo(role);
     persistToken(token);
     setUser(u);
+    persist(token, u);
     return u;
   };
 
   const logout = () => {
     clearToken();
     setUser(null);
+    clear();
   };
 
   return (

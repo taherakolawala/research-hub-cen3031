@@ -210,10 +210,18 @@ export function Navbar() {
             <div className={sectionLabelClass} style={sectionLabelStyle}>
               Account
             </div>
-            <div className="px-3 space-y-0.5 pb-2">
-              <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium" style={{ color: 'rgba(0,82,204,0.55)' }}>
-                <ShieldCheck size={18} strokeWidth={2} />
-                <span className="flex-1 min-w-0 truncate">Lab Administrator</span>
+            <div className="px-3 pb-2">
+              <div
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold"
+                style={{
+                  background: 'rgba(0,82,204,0.08)',
+                  color: '#0052CC',
+                  border: '1px solid rgba(0,82,204,0.2)',
+                  width: 'fit-content',
+                }}
+              >
+                <ShieldCheck size={13} strokeWidth={2} />
+                Lab Administrator
               </div>
             </div>
           </>
