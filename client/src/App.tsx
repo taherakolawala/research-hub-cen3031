@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { MessageUnreadProvider } from './context/MessageUnreadContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Landing } from './pages/auth/Landing';
@@ -19,18 +20,25 @@ import { PositionApplications } from './pages/pi/PositionApplications';
 import { StudentList } from './pages/pi/StudentList';
 import { StudentDetail } from './pages/pi/StudentDetail';
 import { LabRoster } from './pages/pi/LabRoster';
+<<<<<<< HEAD
 import { Inbox } from './pages/shared/Inbox';
 import { ChatView } from './pages/shared/ChatView';
+=======
+import { MessagesPage } from './pages/MessagesPage';
+import { AdminDashboard } from './pages/admin/AdminDashboard';
+>>>>>>> 34e54a527bf383361ff448f76d2a77a1325c1674
 
 function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
+        <MessageUnreadProvider>
         <BrowserRouter>
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/messages" element={<MessagesPage />} />
           <Route
             path="/student"
             element={
@@ -67,9 +75,20 @@ function App() {
             <Route path="inbox" element={<Inbox />} />
             <Route path="inbox/:conversationId" element={<ChatView />} />
           </Route>
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute role="admin">
+                <Outlet />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="dashboard" element={<AdminDashboard />} />
+          </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         </BrowserRouter>
+        </MessageUnreadProvider>
       </AuthProvider>
     </ThemeProvider>
   );

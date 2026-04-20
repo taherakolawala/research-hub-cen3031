@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { api, setAuthToken } from '../lib/api';
-import type { User } from '../types';
+import type { User, UserRole } from '../types';
 
 const TOKEN_KEY = 'rh_token';
 
@@ -8,9 +8,9 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<User>;
-  register: (email: string, password: string, role: 'student' | 'pi', firstName: string, lastName: string) => Promise<User>;
+  register: (email: string, password: string, role: UserRole, firstName: string, lastName: string) => Promise<User>;
   loginDemo: (role: 'student' | 'pi') => Promise<User>;
-  loginWithGoogle: (credential: string, role?: 'student' | 'pi') => Promise<User>;
+  loginWithGoogle: (credential: string, role?: UserRole) => Promise<User>;
   logout: () => void;
 }
 
@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (
     email: string,
     password: string,
-    role: 'student' | 'pi',
+    role: UserRole,
     firstName: string,
     lastName: string
   ) => {
@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return u;
   };
 
-  const loginWithGoogle = async (credential: string, role?: 'student' | 'pi') => {
+  const loginWithGoogle = async (credential: string, role?: UserRole) => {
     const { token, user: u } = await api.auth.google({ credential, role });
     persistToken(token);
     setUser(u);
