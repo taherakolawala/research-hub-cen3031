@@ -1,4 +1,4 @@
-import type { User, StudentProfile, PIProfile, Position, Application, LabRosterMember, Conversation, Message } from '../types';
+import type { User, StudentProfile, PIProfile, Position, Application, LabRosterMember, Conversation, Message, QuestionAnswersMap, NotificationPreferences } from '../types';
 
 const API_BASE = '/api';
 
@@ -57,6 +57,12 @@ export const api = {
     getProfile: () => request<StudentProfile>('/students/profile'),
     updateProfile: (body: Partial<StudentProfile>) =>
       request<StudentProfile>('/students/profile', { method: 'PUT', body: JSON.stringify(body) }),
+    getNotificationPreferences: () => request<NotificationPreferences>('/students/notification-preferences'),
+    updateNotificationPreferences: (body: Partial<NotificationPreferences>) =>
+      request<NotificationPreferences>('/students/notification-preferences', {
+        method: 'PUT',
+        body: JSON.stringify(body),
+      }),
     list: (params?: { major?: string; minGpa?: number; skills?: string; yearLevel?: string }) => {
       const q = new URLSearchParams(params as Record<string, string>).toString();
       return request<StudentProfile[]>(`/students${q ? `?${q}` : ''}`);
@@ -83,8 +89,16 @@ export const api = {
     mine: () => request<(Position & { appCount?: number })[]>('/positions/mine'),
     recommended: () => request<Position[]>('/positions/recommended'),
   },
+  notifications: {
+    getPreferences: () => request<NotificationPreferences>('/notifications/preferences'),
+    updatePreferences: (body: Partial<NotificationPreferences>) =>
+      request<NotificationPreferences>('/notifications/preferences', {
+        method: 'PUT',
+        body: JSON.stringify(body),
+      }),
+  },
   applications: {
-    create: (body: { positionId: string; coverLetter?: string }) =>
+    create: (body: { positionId: string; coverLetter?: string; questionAnswers?: QuestionAnswersMap }) =>
       request<Application>('/applications', { method: 'POST', body: JSON.stringify(body) }),
     mine: () =>
       request<(Application & { positionTitle?: string; labName?: string; department?: string | null })[]>('/applications/mine'),

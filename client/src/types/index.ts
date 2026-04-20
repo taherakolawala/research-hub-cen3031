@@ -1,3 +1,22 @@
+import type { ApplicationQuestion, QuestionAnswersMap } from './applicationQuestions';
+
+export type { ApplicationQuestion, QuestionAnswersMap } from './applicationQuestions';
+
+export type NotificationFrequency = 'immediately' | 'hourly' | 'daily' | 'weekly';
+
+export interface NotificationPreferences {
+  notifyNewPositions: boolean;
+  notificationKeywords: string[];
+  notificationDepartments: string[];
+  notificationFrequency: NotificationFrequency;
+}
+
+export interface ProfileLink {
+  id: string;
+  label: string;
+  url: string;
+}
+
 export type UserRole = 'student' | 'pi';
 export type AcademicLevel = 'freshman' | 'sophomore' | 'junior' | 'senior' | 'grad' | 'masters' | 'phd' | 'postdoc';
 /** @deprecated Use AcademicLevel */
@@ -29,12 +48,13 @@ export interface StudentProfile {
   firstName?: string;
   lastName?: string;
   email?: string;
+  profileLinks?: ProfileLink[];
 }
 
 /** PI lab roster: students with an accepted application to one of this PI's positions */
 export interface LabRosterMember extends StudentProfile {
   acceptedPositionTitles: string[];
-  /** ISO timestamp — earliest acceptance update for this PI's positions */
+  /** ISO timestamp: earliest acceptance update for this PI's positions */
   inLabSince: string;
 }
 
@@ -79,6 +99,8 @@ export interface Position {
   piUserId?: string;
   piFirstName?: string;
   piLastName?: string;
+  /** Custom questions applicants answer (set by PI) */
+  applicationQuestions?: ApplicationQuestion[];
 }
 
 export interface ConversationParticipant {
@@ -122,4 +144,6 @@ export interface Application {
   appliedAt: string;
   positionTitle?: string;
   labName?: string;
+  department?: string | null;
+  questionAnswers?: QuestionAnswersMap;
 }

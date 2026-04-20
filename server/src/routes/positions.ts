@@ -2,10 +2,13 @@ import { Router, Request, Response } from 'express';
 import pool from '../db/pool.js';
 import { authMiddleware, requireRole } from '../middleware/auth.js';
 import { asyncHandler } from '../lib/asyncHandler.js';
+import { queueNotificationsForPosition, processNotificationQueue } from '../lib/notificationQueue.js';
+import { sendPositionClosedEmail } from '../lib/email.js';
 
 const router = Router();
 
 function rowToPosition(row: Record<string, unknown>) {
+  const aq = row.application_questions;
   return {
     id: row.id,
     piId: row.pi_id,
@@ -25,12 +28,13 @@ function rowToPosition(row: Record<string, unknown>) {
     labName: row.lab_name,
     researchArea: (row.research_areas as string[] | undefined)?.join(', ') || null,
     labWebsite: row.lab_website,
+    applicationQuestions: Array.isArray(aq) ? aq : [],
   };
 }
 
 // POST /api/positions - create (PI only)
 router.post('/', authMiddleware, requireRole('pi'), asyncHandler(async (req: Request, res: Response) => {
-  const { title, description, requiredSkills, minGpa, isFunded, compensationType, deadline, timeCommitment, qualifications } = req.body;
+  const { title, description, requiredSkills, minGpa, isFunded, compensationType, deadline, timeCommitment, qualifications, applicationQuestions } = req.body;
   if (!title) {
     return res.status(400).json({ error: 'Title is required' });
   }
@@ -40,11 +44,12 @@ router.post('/', authMiddleware, requireRole('pi'), asyncHandler(async (req: Req
     return res.status(404).json({ error: 'PI profile not found' });
   }
   const compType = compensationType ?? (isFunded ? 'paid' : 'unpaid');
+  const aqJson = JSON.stringify(Array.isArray(applicationQuestions) ? applicationQuestions : []);
 
   const result = await pool.query(
     `INSERT INTO research_positions
-       (pi_id, title, description, required_skills, min_gpa, compensation_type, deadline, time_commitment, qualifications)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       (pi_id, title, description, required_skills, min_gpa, compensation_type, deadline, time_commitment, qualifications, application_questions)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb)
      RETURNING *`,
     [
       pi.id,
@@ -56,9 +61,17 @@ router.post('/', authMiddleware, requireRole('pi'), asyncHandler(async (req: Req
       deadline ?? null,
       timeCommitment ?? null,
       qualifications ?? null,
+      aqJson,
     ]
   );
-  return res.status(201).json(rowToPosition(result.rows[0]));
+  const newPosition = result.rows[0];
+
+  // Trigger notifications asynchronously — do not block the response
+  queueNotificationsForPosition(newPosition.id as string)
+    .then(() => processNotificationQueue())
+    .catch((err: unknown) => console.error('[notifications] Error processing queue:', err));
+
+  return res.status(201).json(rowToPosition(newPosition));
 }));
 
 // GET /api/positions - list with filters (public)
@@ -206,7 +219,7 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
 // PUT /api/positions/:id - update (owner only)
 router.put('/:id', authMiddleware, requireRole('pi'), asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { title, description, requiredSkills, minGpa, isFunded, compensationType, isOpen, status, deadline, timeCommitment, qualifications } = req.body;
+  const { title, description, requiredSkills, minGpa, isFunded, compensationType, isOpen, status, deadline, timeCommitment, qualifications, applicationQuestions } = req.body;
   const piResult = await pool.query('SELECT id FROM pi_profiles WHERE user_id = $1', [req.userId]);
   const pi = piResult.rows[0];
   if (!pi) {
@@ -227,6 +240,11 @@ router.put('/:id', authMiddleware, requireRole('pi'), asyncHandler(async (req: R
     resolvedCompType = isFunded ? 'paid' : 'unpaid';
   }
 
+  const aqParam =
+    applicationQuestions !== undefined
+      ? JSON.stringify(Array.isArray(applicationQuestions) ? applicationQuestions : [])
+      : null;
+
   const result = await pool.query(
     `UPDATE research_positions SET
        title             = COALESCE($1, title),
@@ -237,8 +255,9 @@ router.put('/:id', authMiddleware, requireRole('pi'), asyncHandler(async (req: R
        status            = COALESCE($6::position_status, status),
        deadline          = COALESCE($7, deadline),
        time_commitment   = COALESCE($8, time_commitment),
-       qualifications    = COALESCE($9, qualifications)
-     WHERE id = $10 AND pi_id = $11
+       qualifications    = COALESCE($9, qualifications),
+       application_questions = COALESCE($10::jsonb, application_questions)
+     WHERE id = $11 AND pi_id = $12
      RETURNING *`,
     [
       title ?? null,
@@ -250,6 +269,7 @@ router.put('/:id', authMiddleware, requireRole('pi'), asyncHandler(async (req: R
       deadline ?? null,
       timeCommitment ?? null,
       qualifications ?? null,
+      aqParam,
       id,
       pi.id,
     ]
@@ -272,20 +292,59 @@ router.delete('/:id', authMiddleware, requireRole('pi'), asyncHandler(async (req
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const result = await client.query(
-      `UPDATE research_positions SET status = 'closed' WHERE id = $1 AND pi_id = $2 RETURNING id`,
+    
+    const posResult = await client.query(
+      `SELECT rp.title, pp.lab_name
+       FROM research_positions rp
+       JOIN pi_profiles pp ON pp.id = rp.pi_id
+       WHERE rp.id = $1 AND rp.pi_id = $2`,
       [id, pi.id]
     );
-    if (result.rows.length === 0) {
+    if (posResult.rows.length === 0) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Position not found or access denied' });
     }
+    const { title: positionTitle, lab_name: labName } = posResult.rows[0];
+
+    const updatePos = await client.query(
+      `UPDATE research_positions SET status = 'closed' WHERE id = $1 AND pi_id = $2 RETURNING id`,
+      [id, pi.id]
+    );
+    if (updatePos.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Position not found or access denied' });
+    }
+
+    const affectedApps = await client.query(
+      `SELECT a.id, u.email, u.first_name
+       FROM applications a
+       JOIN student_profiles sp ON sp.id = a.student_id
+       JOIN users u ON u.id = sp.user_id
+       WHERE a.position_id = $1 AND a.status IN ('pending', 'reviewing')`,
+      [id]
+    );
+
     await client.query(
       `UPDATE applications SET status = 'withdrawn'
        WHERE position_id = $1 AND status IN ('pending', 'reviewing')`,
       [id]
     );
     await client.query('COMMIT');
+
+    for (const row of affectedApps.rows) {
+      sendPositionClosedEmail(
+        row.email,
+        row.first_name || 'Student',
+        positionTitle,
+        labName
+      ).catch((err) => {
+        console.error(`[email] Failed to send position closed email to ${row.email}:`, err);
+      });
+    }
+
+    console.log(
+      `[positions] Position ${id} closed. ${affectedApps.rows.length} applicant(s) notified.`
+    );
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;

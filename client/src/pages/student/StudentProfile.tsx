@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Navbar } from '../../components/Navbar';
+import { ProfileLinksEditor } from '../../components/ProfileLinksEditor';
 import { api, getAuthToken } from '../../lib/api';
-import type { AcademicLevel } from '../../types';
+import type { AcademicLevel, ProfileLink } from '../../types';
 
 const YEAR_LEVELS: AcademicLevel[] = ['freshman', 'sophomore', 'junior', 'senior', 'grad', 'masters', 'phd', 'postdoc'];
 
@@ -19,6 +21,7 @@ export function StudentProfile() {
     bio: '',
     resumeUrl: '',
     yearLevel: '' as AcademicLevel | '',
+    profileLinks: [] as ProfileLink[],
   });
 
   useEffect(() => {
@@ -33,6 +36,7 @@ export function StudentProfile() {
           bio: p.bio || '',
           resumeUrl: p.resumeUrl || '',
           yearLevel: p.yearLevel || '',
+          profileLinks: p.profileLinks || [],
         });
       })
       .catch(() => setError('Failed to load profile'))
@@ -56,6 +60,7 @@ export function StudentProfile() {
         bio: form.bio || null,
         resumeUrl: form.resumeUrl || null,
         yearLevel: form.yearLevel || null,
+        profileLinks: form.profileLinks,
       });
     } catch (err: unknown) {
       setError((err as { message?: string })?.message || 'Failed to save');
@@ -140,7 +145,14 @@ export function StudentProfile() {
     <div className="min-h-screen">
       <Navbar />
       <div className="max-w-2xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold text-inherit mb-6">Edit Profile</h1>
+        <h1 className="text-2xl font-bold text-inherit mb-2">Edit Profile</h1>
+        <p className="text-sm text-slate-600 mb-6">
+          Manage email notification preferences for research opportunities (departments, keywords, and opt out) on{' '}
+          <Link to="/student/settings" className="text-teal-600 hover:underline font-medium">
+            Settings
+          </Link>
+          .
+        </p>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
@@ -247,6 +259,10 @@ export function StudentProfile() {
               <p className="mt-1 text-sm text-red-600">{uploadError}</p>
             )}
           </div>
+          <ProfileLinksEditor
+            links={form.profileLinks}
+            onChange={(links) => setForm((f) => ({ ...f, profileLinks: links }))}
+          />
           <button
             type="submit"
             disabled={saving}
