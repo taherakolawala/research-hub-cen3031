@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-import type { User, StudentProfile, PIProfile, Position, Application, LabRosterMember, Conversation, Message, QuestionAnswersMap, NotificationPreferences } from '../types';
-=======
 import type {
   User,
   UserRole,
@@ -9,6 +6,8 @@ import type {
   Position,
   Application,
   LabRosterMember,
+  Conversation,
+  Message,
   QuestionAnswersMap,
   NotificationPreferences,
   ConversationSummary,
@@ -17,7 +16,6 @@ import type {
   LabAdminOption,
   LabPIMember,
 } from '../types';
->>>>>>> 34e54a527bf383361ff448f76d2a77a1325c1674
 
 const API_BASE = '/api';
 
@@ -138,6 +136,18 @@ export const api = {
         readAt: string | null;
         createdAt: string;
       }>(`/messages/${messageId}/read`, { method: 'PATCH' }),
+    sendMessage: (recipientId: string, body: string) =>
+      request<Message>('/messages', { method: 'POST', body: JSON.stringify({ recipientId, body }) }),
+    findOrCreateConversation: (recipientId: string) =>
+      request<{ conversationId: string }>('/messages/conversations', { method: 'POST', body: JSON.stringify({ recipientId }) }),
+    getConversations: () =>
+      request<Conversation[]>('/messages/conversations'),
+    getConversationMessages: (conversationId: string) =>
+      request<Message[]>(`/messages/conversations/${conversationId}`),
+    markAsRead: (messageId: string) =>
+      request<Message>(`/messages/${messageId}/read`, { method: 'PATCH' }),
+    deleteConversation: (conversationId: string) =>
+      request<void>(`/messages/conversations/${conversationId}`, { method: 'DELETE' }),
   },
   admin: {
     getMetrics: (params?: { startDate?: string; endDate?: string; positionType?: string; piId?: string }) => {
@@ -159,33 +169,5 @@ export const api = {
       request<Application>(`/applications/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
     updateNotes: (id: string, notes: string) =>
       request<{ id: string; piNotes: string | null }>(`/applications/${id}/notes`, { method: 'PATCH', body: JSON.stringify({ notes }) }),
-  },
-  messages: {
-    sendMessage: (recipientId: string, body: string) =>
-      request<Message>('/messages', { method: 'POST', body: JSON.stringify({ recipientId, body }) }),
-    findOrCreateConversation: (recipientId: string) =>
-      request<{ conversationId: string }>('/messages/conversations', { method: 'POST', body: JSON.stringify({ recipientId }) }),
-    getConversations: () =>
-      request<Conversation[]>('/messages/conversations'),
-    getConversationMessages: (conversationId: string) =>
-      request<Message[]>(`/messages/conversations/${conversationId}`),
-    markAsRead: (messageId: string) =>
-      request<Message>(`/messages/${messageId}/read`, { method: 'PATCH' }),
-    deleteConversation: (conversationId: string) =>
-      request<void>(`/messages/conversations/${conversationId}`, { method: 'DELETE' }),
-  },
-  messages: {
-    sendMessage: (recipientId: string, body: string) =>
-      request<Message>('/messages', { method: 'POST', body: JSON.stringify({ recipientId, body }) }),
-    findOrCreateConversation: (recipientId: string) =>
-      request<{ conversationId: string }>('/messages/conversations', { method: 'POST', body: JSON.stringify({ recipientId }) }),
-    getConversations: () =>
-      request<Conversation[]>('/messages/conversations'),
-    getConversationMessages: (conversationId: string) =>
-      request<Message[]>(`/messages/conversations/${conversationId}`),
-    markAsRead: (messageId: string) =>
-      request<Message>(`/messages/${messageId}/read`, { method: 'PATCH' }),
-    deleteConversation: (conversationId: string) =>
-      request<void>(`/messages/conversations/${conversationId}`, { method: 'DELETE' }),
   },
 };

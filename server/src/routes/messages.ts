@@ -15,27 +15,12 @@ router.post('/', authMiddleware, asyncHandler(async (req: Request, res: Response
     return res.status(400).json({ error: 'Message body cannot be empty' });
   }
 
-<<<<<<< HEAD
   // Use a transaction + advisory lock to prevent duplicate conversations from
   // race conditions when the button is clicked multiple times simultaneously.
   const client = await pool.connect();
   let row;
   try {
     await client.query('BEGIN');
-=======
-  // Find existing 1:1 conversation between these two users (exactly two participant rows).
-  // Note: the old query used HAVING COUNT(*) = 2 on a join that only produces one row per
-  // conversation, so it never matched and every message created a new thread.
-  const existingConv = await pool.query(
-    `SELECT conversation_id AS id
-     FROM conversation_participants
-     WHERE user_id IN ($1::uuid, $2::uuid)
-     GROUP BY conversation_id
-     HAVING COUNT(*) = 2 AND COUNT(DISTINCT user_id) = 2
-     LIMIT 1`,
-    [req.userId, recipientId]
-  );
->>>>>>> 34e54a527bf383361ff448f76d2a77a1325c1674
 
     // Advisory lock: deterministic key derived from sorted user IDs prevents
     // two concurrent requests from creating a duplicate conversation.

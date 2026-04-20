@@ -10,13 +10,10 @@ import {
   Users,
   Settings,
   UsersRound,
-<<<<<<< HEAD
   MessageSquare,
-=======
   Mail,
   BarChart3,
   ShieldCheck,
->>>>>>> 34e54a527bf383361ff448f76d2a77a1325c1674
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';

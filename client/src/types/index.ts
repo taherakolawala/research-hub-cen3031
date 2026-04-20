@@ -138,17 +138,11 @@ export interface Position {
   applicationQuestions?: ApplicationQuestion[];
 }
 
-<<<<<<< HEAD
 export interface ConversationParticipant {
-=======
-/** A lab administrator user listed for PI association */
-export interface LabAdminOption {
->>>>>>> 34e54a527bf383361ff448f76d2a77a1325c1674
   id: string;
   firstName: string;
   lastName: string;
   email: string;
-<<<<<<< HEAD
   role: UserRole;
 }
 
@@ -172,7 +166,14 @@ export interface Message {
   senderFirstName?: string;
   senderLastName?: string;
   senderRole?: UserRole;
-=======
+}
+
+/** A lab administrator user listed for PI association */
+export interface LabAdminOption {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
   displayName: string;
 }
 
@@ -229,7 +230,6 @@ export interface AdminMetrics {
     application_count: number;
     enrolled_count: number;
   }>;
->>>>>>> 34e54a527bf383361ff448f76d2a77a1325c1674
 }
 
 export interface Application {

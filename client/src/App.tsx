@@ -20,13 +20,10 @@ import { PositionApplications } from './pages/pi/PositionApplications';
 import { StudentList } from './pages/pi/StudentList';
 import { StudentDetail } from './pages/pi/StudentDetail';
 import { LabRoster } from './pages/pi/LabRoster';
-<<<<<<< HEAD
 import { Inbox } from './pages/shared/Inbox';
 import { ChatView } from './pages/shared/ChatView';
-=======
 import { MessagesPage } from './pages/MessagesPage';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
->>>>>>> 34e54a527bf383361ff448f76d2a77a1325c1674
 
 function App() {
   return (
