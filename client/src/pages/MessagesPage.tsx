@@ -9,6 +9,9 @@ import {
   MessageComposer,
   Window,
   useChatContext,
+  WithComponents,
+  MessageActions,
+  defaultMessageActionSet,
 } from 'stream-chat-react';
 import 'stream-chat-react/dist/css/index.css';
 import type { Channel as StreamChannel } from 'stream-chat';
@@ -106,6 +109,91 @@ function CustomChannelPreview({
   );
 }
 
+// ---------------------------------------------------------------------------
+// Message-action overrides
+// ---------------------------------------------------------------------------
+
+/**
+ * Hides the active conversation for the current user only (soft-delete via
+ * channel.hide). The other participant keeps the channel in their list.
+ * Stream fires a channel.hidden event that ChannelList picks up automatically,
+ * removing the channel without a page refresh.
+ */
+function HideChannelButton() {
+  const { channel, setActiveChannel } = useChatContext();
+
+  const handleHide = async () => {
+    if (!channel) return;
+    try {
+      await channel.hide();
+    } catch (err) {
+      console.error('[MessagesPage] Failed to hide channel:', err);
+    }
+    // Clear the active channel; ChannelList removes it via the channel.hidden event
+    setActiveChannel();
+  };
+
+  return (
+    <button
+      onClick={() => { void handleHide(); }}
+      title="Delete conversation"
+      style={{
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 'var(--str-chat__message-options-button-size, 28px)',
+        height: 'var(--str-chat__message-options-button-size, 28px)',
+        borderRadius: 'var(--str-chat__message-options-border-radius, 4px)',
+        color: 'var(--str-chat__message-options-color, #9da2a9)',
+        padding: 0,
+      }}
+    >
+      {/* Trash icon – matches size of other quick-action icons */}
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <polyline points="3 6 5 6 21 6" />
+        <path d="M19 6l-1 14H6L5 6" />
+        <path d="M10 11v6" />
+        <path d="M14 11v6" />
+        <path d="M9 6V4h6v2" />
+      </svg>
+    </button>
+  );
+}
+
+/**
+ * Trimmed action set: only the emoji-reaction quick button + the hide-channel
+ * button. Reply actions (quick + dropdown) and the three-dots dropdown toggle
+ * are intentionally excluded.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const customMessageActionSet: any[] = [
+  // Preserve the default "react" quick action (opens the emoji reaction picker)
+  ...defaultMessageActionSet.filter(
+    (item) => 'type' in item && item.type === 'react' && item.placement === 'quick'
+  ),
+  // Replace the three-dots dropdown with a single trash/hide button
+  { Component: HideChannelButton, placement: 'quick' as const, type: 'hideChannel' },
+];
+
+/** Renders only the emoji + hide actions — no reply, no dropdown clutter. */
+function CustomMessageActions() {
+  return (
+    <MessageActions
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      messageActionSet={customMessageActionSet as any}
+      disableBaseMessageActionSetFilter
+    />
+  );
+}
+
+/** Replaces reply-count badges on messages with nothing. */
+const NoOp = () => null;
+
+// ---------------------------------------------------------------------------
+
 export function MessagesPage() {
   const { user } = useAuth();
 
@@ -117,8 +205,9 @@ export function MessagesPage() {
       <Navbar />
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden p-3 sm:p-4 max-w-6xl mx-auto w-full">
         <h1 className="text-xl font-bold text-slate-900 mb-3 shrink-0">Inbox</h1>
-        {/* Wrapper stretches div.str-chat (Chat has no className prop) into the flex column */}
-        <div className="flex-1 min-h-0 flex flex-col overflow-hidden [&>*]:flex-1 [&>*]:min-h-0 [&>*]:overflow-hidden">
+        {/* Wrapper stretches div.str-chat (Chat has no className prop) into the flex column.
+            No overflow:hidden here — Stream's dialog overlay needs to escape the clip boundary. */}
+        <div className="flex-1 min-h-0 flex flex-col [&>*]:flex-1 [&>*]:min-h-0">
           <Chat client={streamChatClient} theme="str-chat__theme-light">
             <MessagesPageInner user={user} />
           </Chat>
@@ -200,7 +289,7 @@ function MessagesPageInner({ user }: { user: User }) {
   };
 
   return (
-    <div className="flex flex-row flex-1 min-h-0 gap-0 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+    <div className="flex flex-row h-full min-h-0 gap-0 border border-slate-200 rounded-xl overflow-clip shadow-sm">
       {/* Left: channel list + optional new conversation UI for PIs */}
       <div className="w-full md:max-w-sm md:min-w-[280px] flex flex-col bg-white">
         {user.role === 'pi' && (
@@ -273,11 +362,18 @@ function MessagesPageInner({ user }: { user: User }) {
       <div className="flex-1 flex flex-col min-h-0">
         {activeChannel ? (
           <Channel channel={activeChannel}>
-            <Window>
-              <ChannelHeader />
-              <MessageList />
-              <MessageComposer />
-            </Window>
+            {/* Override MessageActions (no reply, no dropdown) and suppress reply-count badges */}
+            <WithComponents overrides={{
+              MessageActions: CustomMessageActions,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              MessageRepliesCountButton: NoOp as any,
+            }}>
+              <Window>
+                <ChannelHeader />
+                <MessageList />
+                <MessageComposer />
+              </Window>
+            </WithComponents>
           </Channel>
         ) : (
           <div className="flex flex-1 items-center justify-center text-slate-400 text-sm p-8 text-center">
