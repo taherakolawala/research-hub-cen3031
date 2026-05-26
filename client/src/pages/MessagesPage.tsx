@@ -11,11 +11,100 @@ import {
   useChatContext,
 } from 'stream-chat-react';
 import 'stream-chat-react/dist/css/index.css';
+import type { Channel as StreamChannel } from 'stream-chat';
 import streamChatClient from '../lib/streamChat';
 import { useAuth } from '../context/AuthContext';
 import { Navbar } from '../components/Navbar';
 import { api } from '../lib/api';
 import type { User, StudentProfile } from '../types';
+
+/** Standalone channel preview row — no Stream internal context required. */
+function CustomChannelPreview({
+  channel,
+  setActiveChannel,
+  activeChannel,
+}: {
+  channel: StreamChannel;
+  setActiveChannel: (ch: StreamChannel) => void;
+  activeChannel?: StreamChannel | null;
+}) {
+  const currentUserId = streamChatClient.userID;
+  const members = Object.values(channel.state.members);
+  const otherMember = members.find((m) => m.user?.id !== currentUserId);
+  const displayName = otherMember?.user?.name ?? 'Unknown';
+  const lastMessage = channel.state.messages[channel.state.messages.length - 1];
+  const preview = lastMessage?.text ?? 'No messages yet';
+  const unread = channel.countUnread();
+  const isActive = activeChannel?.cid === channel.cid;
+
+  return (
+    <div
+      onClick={() => setActiveChannel(channel)}
+      style={{
+        padding: '12px 16px',
+        cursor: 'pointer',
+        backgroundColor: isActive ? '#f0f2f5' : 'white',
+        borderBottom: '1px solid #f0f2f5',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+      }}
+    >
+      <div
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: '50%',
+          backgroundColor: '#0052CC',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 700,
+          fontSize: 14,
+          flexShrink: 0,
+        }}
+      >
+        {displayName.slice(0, 1).toUpperCase()}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: unread > 0 ? 700 : 500, fontSize: 14, color: '#1a1d2e' }}>
+          {displayName}
+        </div>
+        <div
+          style={{
+            fontSize: 12,
+            color: '#8b90ad',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {preview}
+        </div>
+      </div>
+      {unread > 0 && (
+        <div
+          style={{
+            background: '#0052CC',
+            color: 'white',
+            borderRadius: '50%',
+            width: 20,
+            height: 20,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 11,
+            fontWeight: 700,
+            flexShrink: 0,
+          }}
+        >
+          {unread}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function MessagesPage() {
   const { user } = useAuth();
@@ -37,6 +126,9 @@ export function MessagesPage() {
 }
 
 function MessagesPageInner({ user }: { user: User }) {
+  // Active channel and its setter come from the Chat context.
+  // ChannelList automatically calls setActiveChannel when a channel is clicked.
+  // We also call setActiveChannel manually when a PI creates a new channel.
   const { channel: activeChannel, setActiveChannel } = useChatContext();
 
   const [showStudentPicker, setShowStudentPicker] = useState(false);
@@ -75,7 +167,8 @@ function MessagesPageInner({ user }: { user: User }) {
     if (creatingChannel) return;
     const studentUserId = student.userId ?? (student as unknown as { id: string }).id;
     // Deterministic channel ID: sort the two UUIDs, strip dashes, join, and
-    // truncate to 64 chars (Stream's hard limit).
+    // truncate to 64 chars (Stream's hard limit). The same two users always
+    // produce the same ID regardless of who initiates the conversation.
     const channelId = [user.id, studentUserId]
       .sort()
       .join('')
@@ -84,6 +177,9 @@ function MessagesPageInner({ user }: { user: User }) {
     const studentName = ((student.firstName ?? '') + ' ' + (student.lastName ?? '')).trim();
     setCreatingChannel(true);
     try {
+      // Ensure the student is registered in Stream before creating the channel.
+      // The PI was already upserted when they obtained their token; without this
+      // call the student may be unknown to Stream and channel.create() will fail.
       await api.stream.upsertUser(studentUserId);
 
       const channel = streamChatClient.channel('messaging', channelId, {
@@ -157,6 +253,16 @@ function MessagesPageInner({ user }: { user: User }) {
           sort={{ last_message_at: -1 }}
           options={{ state: true, presence: true, limit: 30 }}
           customActiveChannel={activeChannel?.id}
+          renderChannels={(channels) =>
+            channels.map((ch) => (
+              <CustomChannelPreview
+                key={ch.cid}
+                channel={ch}
+                setActiveChannel={setActiveChannel}
+                activeChannel={activeChannel}
+              />
+            ))
+          }
         />
       </div>
 
