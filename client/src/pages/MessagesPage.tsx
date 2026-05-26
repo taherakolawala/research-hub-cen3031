@@ -113,13 +113,16 @@ export function MessagesPage() {
   if (user.role !== 'student' && user.role !== 'pi') return <Navigate to="/" replace />;
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div className="h-dvh overflow-hidden flex flex-col bg-slate-50">
       <Navbar />
-      <div className="flex-1 flex flex-col min-h-0 p-3 sm:p-4 max-w-6xl mx-auto w-full">
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden p-3 sm:p-4 max-w-6xl mx-auto w-full">
         <h1 className="text-xl font-bold text-slate-900 mb-3 shrink-0">Inbox</h1>
-        <Chat client={streamChatClient} theme="str-chat__theme-light">
-          <MessagesPageInner user={user} />
-        </Chat>
+        {/* Wrapper makes div.str-chat (rendered by Chat, no className prop) fill the flex column */}
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden [&>*]:flex-1 [&>*]:flex [&>*]:flex-col [&>*]:min-h-0 [&>*]:overflow-hidden">
+          <Chat client={streamChatClient} theme="str-chat__theme-light">
+            <MessagesPageInner user={user} />
+          </Chat>
+        </div>
       </div>
     </div>
   );
@@ -197,7 +200,7 @@ function MessagesPageInner({ user }: { user: User }) {
   };
 
   return (
-    <div className="flex flex-1 min-h-[500px] gap-0 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+    <div className="flex flex-1 min-h-0 gap-0 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
       {/* Left: channel list + optional new conversation UI for PIs */}
       <div className="w-full md:max-w-sm md:min-w-[280px] flex flex-col border-r border-slate-200 bg-white">
         {user.role === 'pi' && (
