@@ -117,8 +117,8 @@ export function MessagesPage() {
       <Navbar />
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden p-3 sm:p-4 max-w-6xl mx-auto w-full">
         <h1 className="text-xl font-bold text-slate-900 mb-3 shrink-0">Inbox</h1>
-        {/* Wrapper makes div.str-chat (rendered by Chat, no className prop) fill the flex column */}
-        <div className="flex-1 min-h-0 flex flex-col overflow-hidden [&>*]:flex-1 [&>*]:flex [&>*]:flex-col [&>*]:min-h-0 [&>*]:overflow-hidden">
+        {/* Wrapper stretches div.str-chat (Chat has no className prop) into the flex column */}
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden [&>*]:flex-1 [&>*]:min-h-0 [&>*]:overflow-hidden">
           <Chat client={streamChatClient} theme="str-chat__theme-light">
             <MessagesPageInner user={user} />
           </Chat>
@@ -200,7 +200,7 @@ function MessagesPageInner({ user }: { user: User }) {
   };
 
   return (
-    <div className="flex flex-1 min-h-0 gap-0 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+    <div className="flex flex-row flex-1 min-h-0 gap-0 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
       {/* Left: channel list + optional new conversation UI for PIs */}
       <div className="w-full md:max-w-sm md:min-w-[280px] flex flex-col border-r border-slate-200 bg-white">
         {user.role === 'pi' && (
