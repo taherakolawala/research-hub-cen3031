@@ -202,7 +202,7 @@ function MessagesPageInner({ user }: { user: User }) {
   return (
     <div className="flex flex-row flex-1 min-h-0 gap-0 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
       {/* Left: channel list + optional new conversation UI for PIs */}
-      <div className="w-full md:max-w-sm md:min-w-[280px] flex flex-col border-r border-slate-200 bg-white">
+      <div className="w-full md:max-w-sm md:min-w-[280px] flex flex-col bg-white">
         {user.role === 'pi' && (
           <div className="p-2 border-b border-slate-100 shrink-0">
             <button
