@@ -410,6 +410,7 @@ function MessagesPageInner({ user }: { user: User }) {
   const [students, setStudents] = useState<StudentProfile[]>([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [creatingChannel, setCreatingChannel] = useState(false);
+  const [studentSearch, setStudentSearch] = useState('');
 
   // Ref for click-outside detection on the student picker dropdown
   const pickerRef = useRef<HTMLDivElement>(null);
@@ -426,6 +427,7 @@ function MessagesPageInner({ user }: { user: User }) {
   }, [showStudentPicker]);
 
   const openStudentPicker = async () => {
+    setStudentSearch('');
     setShowStudentPicker(true);
     setLoadingStudents(true);
     try {
@@ -486,36 +488,62 @@ function MessagesPageInner({ user }: { user: User }) {
             {showStudentPicker && (
               <div
                 ref={pickerRef}
-                className="mt-2 border border-slate-200 rounded-lg bg-white shadow-lg max-h-60 overflow-y-auto"
+                className="mt-2 border border-slate-200 rounded-lg bg-white shadow-lg"
               >
-                {loadingStudents ? (
-                  <div className="p-3 text-sm text-slate-500 text-center">Loading students…</div>
-                ) : students.length === 0 ? (
-                  <div className="p-3 text-sm text-slate-500 text-center">No students found</div>
-                ) : (
-                  students.map((s) => {
-                    const sId = s.userId ?? (s as unknown as { id: string }).id;
-                    const name =
-                      [s.firstName, s.lastName].filter(Boolean).join(' ') ||
-                      (s as unknown as { email?: string }).email ||
-                      sId;
-                    return (
-                      <button
-                        key={sId}
-                        disabled={creatingChannel}
-                        onClick={() => {
-                          void startConversation(s);
-                        }}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors disabled:opacity-50 disabled:cursor-wait"
-                      >
-                        {name}
-                      </button>
+                {/* Search input — sits above the scrollable list */}
+                <div className="p-2 border-b border-slate-100">
+                  <input
+                    autoFocus
+                    type="text"
+                    placeholder="Search students…"
+                    value={studentSearch}
+                    onChange={(e) => setStudentSearch(e.target.value)}
+                    className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-md outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                  />
+                </div>
+
+                {/* Scrollable student list */}
+                <div className="max-h-48 overflow-y-auto">
+                  {loadingStudents ? (
+                    <div className="p-3 text-sm text-slate-500 text-center">Loading students…</div>
+                  ) : (() => {
+                    const query = studentSearch.trim().toLowerCase();
+                    const visible = students
+                      .map((s) => ({
+                        s,
+                        sId: s.userId ?? (s as unknown as { id: string }).id,
+                        name:
+                          [s.firstName, s.lastName].filter(Boolean).join(' ') ||
+                          (s as unknown as { email?: string }).email ||
+                          (s.userId ?? (s as unknown as { id: string }).id),
+                      }))
+                      .filter(({ name }) => name.toLowerCase().includes(query))
+                      .sort((a, b) => a.name.localeCompare(b.name));
+
+                    return visible.length === 0 ? (
+                      <div className="p-3 text-sm text-slate-500 text-center">
+                        {students.length === 0 ? 'No students found' : 'No matches'}
+                      </div>
+                    ) : (
+                      visible.map(({ s, sId, name }) => (
+                        <button
+                          key={sId}
+                          disabled={creatingChannel}
+                          onClick={() => {
+                            void startConversation(s);
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors disabled:opacity-50 disabled:cursor-wait"
+                        >
+                          {name}
+                        </button>
+                      ))
                     );
-                  })
-                )}
+                  })()}
+                </div>
+
                 <button
                   onClick={() => setShowStudentPicker(false)}
-                  className="w-full px-3 py-2 text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                  className="w-full px-3 py-2 text-xs text-slate-400 hover:text-slate-600 transition-colors border-t border-slate-100"
                 >
                   Cancel
                 </button>
