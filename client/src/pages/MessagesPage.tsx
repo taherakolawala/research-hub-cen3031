@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import ReactDOM from 'react-dom';
 import { Navigate } from 'react-router-dom';
 import {
   Chat,
@@ -33,7 +34,10 @@ interface ConfirmModalProps {
 }
 
 function ConfirmModal({ message, confirmLabel = 'Delete', onConfirm, onCancel }: ConfirmModalProps) {
-  return (
+  // Portal to document.body so the overlay escapes any overflow:clip ancestor
+  // (the main panel container uses overflow:clip for rounded corners, which
+  // clips position:fixed descendants at the paint boundary).
+  return ReactDOM.createPortal(
     <div
       style={{
         position: 'fixed',
@@ -94,7 +98,8 @@ function ConfirmModal({ message, confirmLabel = 'Delete', onConfirm, onCancel }:
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
