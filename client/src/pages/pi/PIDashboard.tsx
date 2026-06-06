@@ -250,7 +250,7 @@ export function PIDashboard() {
                           <div className="pi-dash-pos-info">
                             <div className="pi-dash-pos-title">{p.title}</div>
                             <div className="pi-dash-pos-meta">
-                              <span>{p.isFunded ? 'Funded' : 'Volunteer'}</span>
+                              <span>{p.compensationType === 'paid' ? 'Paid' : p.compensationType === 'stipend' ? 'Stipend' : p.compensationType === 'credit' ? 'Credit' : 'Volunteer'}</span>
                               {skills ? <span>{skills}</span> : null}
                               <span>{daysUntil(p.deadline)}</span>
                             </div>
